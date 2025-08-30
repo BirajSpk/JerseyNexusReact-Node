@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Truck, Shield, Star } from 'lucide-react';
+import FeaturedProducts from '../components/FeaturedProducts';
 
 const Home = () => {
   const features = [
@@ -153,6 +154,9 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Featured Products Section */}
+      <FeaturedProducts />
 
       {/* CTA Section */}
       <section className="py-16 bg-neutral">

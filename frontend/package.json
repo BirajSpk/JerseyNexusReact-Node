@@ -22,7 +22,18 @@
     "react-hot-toast": "^2.4.1",
     "lucide-react": "^0.294.0",
     "clsx": "^2.0.0",
-    "tailwind-merge": "^2.0.0"
+    "tailwind-merge": "^2.0.0",
+    "@tiptap/react": "^2.1.13",
+    "@tiptap/starter-kit": "^2.1.13",
+    "@tiptap/extension-image": "^2.1.13",
+    "@tiptap/extension-link": "^2.1.13",
+    "@tiptap/extension-youtube": "^2.1.13",
+    "react-image-crop": "^11.0.5",
+    "socket.io-client": "^4.7.4",
+    "swiper": "^11.0.5",
+    "react-select": "^5.8.0",
+    "react-rating-stars-component": "^2.2.0",
+    "react-medium-image-zoom": "^5.1.8"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",

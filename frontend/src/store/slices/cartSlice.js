@@ -39,20 +39,27 @@ const cartSlice = createSlice({
   },
   reducers: {
     addToCart: (state, action) => {
-      const { product, quantity = 1 } = action.payload;
-      const existingItem = state.items.find(item => item.id === product.id);
+      const { product, quantity = 1, size, color } = action.payload;
+      
+      // Create unique item key based on product ID, size, and color
+      const itemKey = `${product.id}-${size || 'default'}-${color || 'default'}`;
+      const existingItem = state.items.find(item => item.key === itemKey);
       
       if (existingItem) {
         existingItem.quantity += quantity;
       } else {
         state.items.push({
+          key: itemKey,
           id: product.id,
           name: product.name,
-          price: product.price,
+          price: product.salePrice || product.price,
+          originalPrice: product.price,
           image: product.images?.[0]?.url || '',
           slug: product.slug,
           quantity,
           stock: product.stock,
+          size: size || null,
+          color: color || null,
         });
       }
       
@@ -64,8 +71,8 @@ const cartSlice = createSlice({
     },
     
     removeFromCart: (state, action) => {
-      const productId = action.payload;
-      state.items = state.items.filter(item => item.id !== productId);
+      const itemKey = action.payload;
+      state.items = state.items.filter(item => item.key !== itemKey);
       
       const totals = calculateTotals(state.items);
       state.totalItems = totals.totalItems;
@@ -75,8 +82,8 @@ const cartSlice = createSlice({
     },
     
     updateQuantity: (state, action) => {
-      const { productId, quantity } = action.payload;
-      const item = state.items.find(item => item.id === productId);
+      const { itemKey, quantity } = action.payload;
+      const item = state.items.find(item => item.key === itemKey);
       
       if (item && quantity > 0 && quantity <= item.stock) {
         item.quantity = quantity;

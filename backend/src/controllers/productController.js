@@ -25,15 +25,26 @@ const getProducts = asyncHandler(async (req, res) => {
 });
 
 // @desc    Get single product
-// @route   GET /api/products/:slug
+// @route   GET /api/products/:slug or GET /api/products/:id
 // @access  Public
 const getProduct = asyncHandler(async (req, res) => {
-  const { slug } = req.params;
+  const { slug, id } = req.params;
 
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: { category: true, reviews: { include: { user: true } } }
-  });
+  let product;
+
+  if (slug) {
+    // Search by slug
+    product = await prisma.product.findUnique({
+      where: { slug },
+      include: { category: true, reviews: { include: { user: true } } }
+    });
+  } else if (id) {
+    // Search by ID
+    product = await prisma.product.findUnique({
+      where: { id },
+      include: { category: true, reviews: { include: { user: true } } }
+    });
+  }
 
   if (!product) {
     return sendResponse(res, 404, false, 'Product not found');

@@ -47,4 +47,94 @@ api.interceptors.response.use(
   }
 );
 
+// API Methods
+export const authAPI = {
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (userData) => api.post('/auth/register', userData),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (token, password) => api.post('/auth/reset-password', { token, password }),
+  verifyToken: () => api.get('/auth/verify'),
+};
+
+export const userAPI = {
+  getProfile: () => api.get('/users/profile'),
+  updateProfile: (data) => api.put('/users/profile', data),
+  getUsers: (params) => api.get('/users', { params }),
+  getUserById: (id) => api.get(`/users/${id}`),
+  updateUserRole: (id, role) => api.put(`/users/${id}/role`, { role }),
+  deleteUser: (id) => api.delete(`/users/${id}`),
+  getUserStats: () => api.get('/users/stats'),
+};
+
+export const productAPI = {
+  getProducts: (params) => api.get('/products', { params }),
+  getProductById: (id) => api.get(`/products/${id}`),
+  getProductBySlug: (slug) => api.get(`/products/slug/${slug}`),
+  createProduct: (data) => api.post('/products', data),
+  updateProduct: (id, data) => api.put(`/products/${id}`, data),
+  deleteProduct: (id) => api.delete(`/products/${id}`),
+  getFeaturedProducts: () => api.get('/products?featured=true'),
+  getProductsByCategory: (categoryId) => api.get(`/products?categoryId=${categoryId}`),
+};
+
+export const categoryAPI = {
+  getCategories: (params) => api.get('/categories', { params }),
+  getCategoryById: (id) => api.get(`/categories/${id}`),
+  createCategory: (data) => api.post('/categories', data),
+  updateCategory: (id, data) => api.put(`/categories/${id}`, data),
+  deleteCategory: (id) => api.delete(`/categories/${id}`),
+  getProductCategories: () => api.get('/categories?type=PRODUCT'),
+  getBlogCategories: () => api.get('/categories?type=BLOG'),
+};
+
+export const orderAPI = {
+  getOrders: (params) => api.get('/orders', { params }),
+  getOrderById: (id) => api.get(`/orders/${id}`),
+  createOrder: (data) => api.post('/orders', data),
+  updateOrderStatus: (id, data) => api.put(`/orders/${id}`, data),
+};
+
+export const paymentAPI = {
+  initiateKhalti: (data) => api.post('/payments/khalti/initiate', data),
+  verifyKhalti: (data) => api.post('/payments/khalti/verify', data),
+  processCOD: (data) => api.post('/payments/cod/process', data),
+};
+
+export const uploadAPI = {
+  uploadProfile: (formData) => {
+    return api.post('/uploads/profile', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  uploadEditor: (formData) => {
+    return api.post('/uploads/editor', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  uploadProducts: (formData) => {
+    return api.post('/uploads/products', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  deleteFile: (filepath) => api.delete('/uploads/delete', { data: { filepath } }),
+};
+
+export const reviewAPI = {
+  getReviews: (params) => api.get('/reviews', { params }),
+  createReview: (data) => api.post('/reviews', data),
+  updateReview: (id, data) => api.put(`/reviews/${id}`, data),
+  deleteReview: (id) => api.delete(`/reviews/${id}`),
+  getProductReviews: (productId) => api.get(`/reviews?productId=${productId}`),
+};
+
+export const blogAPI = {
+  getBlogs: (params) => api.get('/blogs', { params }),
+  getBlogById: (id) => api.get(`/blogs/${id}`),
+  getBlogBySlug: (slug) => api.get(`/blogs/slug/${slug}`),
+  createBlog: (data) => api.post('/blogs', data),
+  updateBlog: (id, data) => api.put(`/blogs/${id}`, data),
+  deleteBlog: (id) => api.delete(`/blogs/${id}`),
+  getPublishedBlogs: () => api.get('/blogs?published=true'),
+};
+
 export default api;

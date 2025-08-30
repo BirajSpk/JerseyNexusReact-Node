@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 // @access  Public
 const register = asyncHandler(async (req, res) => {
   const { name, email, phone, password, confirmPassword } = req.body;
-
+  console.table(req.body);
   // Validate required fields
   if (!name || !email || !password) {
     return sendResponse(res, 400, false, 'Name, email, and password are required');

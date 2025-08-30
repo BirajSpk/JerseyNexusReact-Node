@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -16,6 +16,8 @@ model User {
   email     String   @unique
   password  String
   avatar    String?
+  phone     String?
+  address   String?   // JSON string: {street, city, state, postalCode, country}
   role      String   @default("USER")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -48,8 +50,11 @@ model Product {
   name        String
   description String?
   price       Float
+  salePrice   Float?  // For discounted products
   stock       Int     @default(0)
   categoryId  String
+  sizes       String? // JSON string of available sizes: ["S", "M", "L", "XL"]
+  colors      String? // JSON string of available colors: [{name: "Red", code: "#FF0000"}]
   
   // SEO Fields
   metaTitle       String?
@@ -58,6 +63,10 @@ model Product {
   
   // Images as simple text field (JSON string)
   images String? // JSON string of array: [{url: string, altText: string, isPrimary: boolean}]
+  
+  // Product status
+  featured    Boolean @default(false)
+  status      String  @default("ACTIVE") // ACTIVE, INACTIVE, OUT_OF_STOCK
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -74,10 +83,20 @@ model Order {
   id          String      @id @default(cuid())
   userId      String
   totalAmount Float
-  status      String      @default("PENDING")
+  shippingCost Float      @default(0)
+  discountAmount Float    @default(0)
+  status      String      @default("PENDING") // PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+  paymentMethod String    @default("COD") // COD, KHALTI
+  paymentStatus String    @default("PENDING") // PENDING, PAID, FAILED, REFUNDED
+  paymentId   String?     // Khalti payment ID
+  trackingNumber String?
   
   // Shipping info as JSON string
-  shippingAddress String // JSON string: {name, phone, address, city, postalCode}
+  shippingAddress String // JSON string: {name, phone, address, city, postalCode, country}
+  
+  // Order notes
+  notes       String?
+  adminNotes  String?
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -95,6 +114,8 @@ model OrderItem {
   productId String
   quantity  Int
   price     Float
+  size      String?
+  color     String?
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

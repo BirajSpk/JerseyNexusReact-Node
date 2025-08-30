@@ -13,7 +13,11 @@
     "db:reset": "npx prisma migrate reset",
     "db:generate": "npx prisma generate",
     "db:studio": "npx prisma studio",
-    "db:seed": "node src/utils/seed.js"
+    "db:seed": "node src/utils/seed.js",
+    "db:seed-dummy": "node scripts/seedDummyData.js",
+    "db:check": "node scripts/checkDatabase.js",
+    "connection:test": "node scripts/testConnection.js",
+    "setup": "npm run db:generate && npm run db:migrate && npm run db:seed"
   },
   "dependencies": {
     "@prisma/client": "^5.7.1",
@@ -28,7 +32,10 @@
     "multer": "^1.4.5-lts.1",
     "dotenv": "^16.3.1",
     "compression": "^1.7.4",
-    "express-fileupload": "^1.4.3"
+    "express-fileupload": "^1.4.3",
+    "axios": "^1.6.2",
+    "uuid": "^9.0.1",
+    "socket.io": "^4.7.4"
   },
   "devDependencies": {
     "@babel/cli": "^7.23.4",

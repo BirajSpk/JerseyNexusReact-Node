@@ -46,7 +46,8 @@ const Register = () => {
         name: data.name,
         email: data.email,
         phone: data.phone,
-        password: data.password
+        password: data.password,
+        confirmPassword : data.password
       });
       
       const { user, token } = response.data.data;
