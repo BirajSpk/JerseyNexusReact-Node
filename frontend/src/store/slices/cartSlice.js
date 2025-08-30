@@ -40,11 +40,23 @@ const cartSlice = createSlice({
   reducers: {
     addToCart: (state, action) => {
       const { product, quantity = 1, size, color } = action.payload;
-      
+
       // Create unique item key based on product ID, size, and color
       const itemKey = `${product.id}-${size || 'default'}-${color || 'default'}`;
       const existingItem = state.items.find(item => item.key === itemKey);
-      
+
+      // Process single product image URL
+      let productImage = '';
+      if (product.images) {
+        // Backend contains single image URL as string
+        productImage = product.images;
+
+        // Ensure image has proper URL prefix
+        if (!productImage.startsWith('http')) {
+          productImage = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001'}${productImage}`;
+        }
+      }
+
       if (existingItem) {
         existingItem.quantity += quantity;
       } else {
@@ -54,7 +66,7 @@ const cartSlice = createSlice({
           name: product.name,
           price: product.salePrice || product.price,
           originalPrice: product.price,
-          image: product.images?.[0]?.url || '',
+          image: productImage,
           slug: product.slug,
           quantity,
           stock: product.stock,
@@ -62,11 +74,11 @@ const cartSlice = createSlice({
           color: color || null,
         });
       }
-      
+
       const totals = calculateTotals(state.items);
       state.totalItems = totals.totalItems;
       state.totalAmount = totals.totalAmount;
-      
+
       saveCartToStorage(state.items);
     },
     

@@ -9,19 +9,52 @@ const prisma = new PrismaClient();
 const getProducts = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 12;
-  
-  const { skip, take } = getPagination(page, limit);
-  
-  const products = await prisma.product.findMany({
-    skip,
-    take,
-    include: {
-      category: { select: { id: true, name: true, slug: true } }
-    },
-    orderBy: { createdAt: 'desc' }
-  });
+  const search = req.query.search || '';
+  const categoryId = req.query.categoryId || req.query.category;
+  const featured = req.query.featured === 'true';
+  const sortBy = req.query.sortBy || 'createdAt';
+  const sortOrder = req.query.sortOrder || 'desc';
 
-  sendResponse(res, 200, true, 'Products retrieved successfully', { products });
+  const { skip, take } = getPagination(page, limit);
+
+  // Build where clause
+  const where = {
+    ...(search && {
+      OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { brand: { contains: search, mode: 'insensitive' } }
+      ]
+    }),
+    ...(categoryId && { categoryId }),
+    ...(featured && { featured: true })
+  };
+
+  const [products, totalProducts] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      skip,
+      take,
+      include: {
+        category: { select: { id: true, name: true, slug: true } }
+      },
+      orderBy: { [sortBy]: sortOrder }
+    }),
+    prisma.product.count({ where })
+  ]);
+
+  const totalPages = Math.ceil(totalProducts / limit);
+
+  sendResponse(res, 200, true, 'Products retrieved successfully', {
+    products,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalItems: totalProducts,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    }
+  });
 });
 
 // @desc    Get single product

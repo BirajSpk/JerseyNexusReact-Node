@@ -10,7 +10,7 @@ import { UserList, UserEdit, UserCreate } from './resources/users';
 import { ProductList, ProductEdit, ProductCreate } from './resources/products';
 import { CategoryList, CategoryEdit, CategoryCreate } from './resources/categories';
 import { OrderList, OrderEdit } from './resources/orders';
-import { ReviewList, ReviewEdit } from './resources/reviews';
+import { ReviewList, ReviewEdit, ReviewShow } from './resources/reviews';
 import { BlogList, BlogEdit, BlogCreate } from './resources/blogs';
 
 // Dashboard
@@ -70,6 +70,7 @@ const App = () => (
       name="reviews"
       list={ReviewList}
       edit={ReviewEdit}
+      show={ReviewShow}
       recordRepresentation={(record) => `Review by ${record.user?.name}`}
     />
     

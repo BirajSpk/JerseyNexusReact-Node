@@ -32,17 +32,25 @@ api.interceptors.response.use(
   },
   (error) => {
     const message = error.response?.data?.error || 'Something went wrong';
-    
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+    const isRegisterRequest = error.config?.url?.includes('/auth/register');
+
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-      toast.error('Session expired. Please login again.');
+      // Don't redirect or show toast for login/register failures
+      if (!isLoginRequest && !isRegisterRequest) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+        toast.error('Session expired. Please login again.');
+      }
     } else if (error.response?.status >= 500) {
       toast.error('Server error. Please try again later.');
     } else {
-      toast.error(message);
+      // Don't show toast for login/register errors - let the forms handle them
+      if (!isLoginRequest && !isRegisterRequest) {
+        toast.error(message);
+      }
     }
-    
+
     return Promise.reject(error);
   }
 );

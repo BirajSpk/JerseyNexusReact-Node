@@ -22,7 +22,7 @@ const Products = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('grid');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [sortBy, setSortBy] = useState('name');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
@@ -58,7 +58,7 @@ const Products = () => {
         }
 
         if (categoriesResponse.data.success) {
-          setCategories(categoriesResponse.data.data || []);
+          setCategories(categoriesResponse.data.data.categories || []);
         }
 
       } catch (error) {

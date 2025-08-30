@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -18,19 +19,22 @@ import {
   LogOut
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { userAPI, uploadAPI } from '../utils/api';
+import { userAPI, uploadAPI, orderAPI, paymentAPI } from '../utils/api';
 import { updateProfile, logout } from '../store/slices/authSlice';
 import ImageCropper from '../components/ImageCropper';
 import WebSocketService from '../services/websocket';
 
 const Profile = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector(state => state.auth);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showCropper, setShowCropper] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
   const [profileData, setProfileData] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   const {
     register,
@@ -70,6 +74,56 @@ const Profile = () => {
       fetchProfile();
     }
   }, [isAuthenticated, setValue]);
+
+  // Fetch user orders
+  const fetchOrders = async () => {
+    if (!isAuthenticated) return;
+
+    setOrdersLoading(true);
+    try {
+      const response = await orderAPI.getOrders();
+      if (response.data.success) {
+        setOrders(response.data.data.orders || []);
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      toast.error('Failed to load order history');
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  // Fetch orders when orders tab is active
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      fetchOrders();
+    }
+  }, [activeTab, isAuthenticated]);
+
+  // Handle payment retry for pending Khalti orders
+  const handleRetryPayment = async (order) => {
+    try {
+      const response = await paymentAPI.initiateKhalti({
+        orderId: order.id,
+        amount: order.totalAmount * 100,
+        productName: `Order #${order.id.slice(-8)}`
+      });
+
+      if (response.data.success) {
+        const { payment_url } = response.data.data;
+        toast.success('🚀 Redirecting to Khalti Payment...', {
+          duration: 2000,
+          style: { background: '#8B5CF6', color: '#fff' },
+        });
+        setTimeout(() => {
+          window.location.href = payment_url;
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Payment retry error:', error);
+      toast.error('Failed to initiate payment. Please try again.');
+    }
+  };
 
   // Listen for profile updates via WebSocket
   useEffect(() => {
@@ -498,10 +552,142 @@ const Profile = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">Order History</h2>
-                  <div className="text-center py-12">
-                    <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                    <p className="text-gray-600">Order history will be implemented here</p>
-                  </div>
+
+                  {ordersLoading ? (
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Loading orders...</p>
+                    </div>
+                  ) : orders.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600 mb-4">No orders found</p>
+                      <a href="/products" className="text-blue-600 hover:text-blue-700 font-medium">
+                        Start Shopping
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {orders.map((order) => (
+                        <div key={order.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <h3 className="font-semibold text-gray-900">Order #{order.id.slice(-8)}</h3>
+                              <p className="text-sm text-gray-600">
+                                {new Date(order.createdAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-gray-900">NPR {order.totalAmount.toLocaleString()}</p>
+                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                                order.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
+                                order.status === 'SHIPPED' ? 'bg-blue-100 text-blue-800' :
+                                order.status === 'PROCESSING' ? 'bg-yellow-100 text-yellow-800' :
+                                order.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {order.status}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="border-t pt-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <h4 className="font-medium text-gray-900 mb-2">Items ({order.items?.length || 0})</h4>
+                                <div className="space-y-2">
+                                  {order.items?.slice(0, 2).map((item) => (
+                                    <div key={item.id} className="flex items-center space-x-3">
+                                      <img
+                                        src={item.product?.images || 'https://placehold.co/40x40/e5e7eb/6b7280?text=Product'}
+                                        alt={item.product?.name}
+                                        className="w-10 h-10 object-cover rounded"
+                                        onError={(e) => {
+                                          e.target.src = 'https://placehold.co/40x40/e5e7eb/6b7280?text=Product';
+                                        }}
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate">
+                                          {item.product?.name}
+                                        </p>
+                                        <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                  {order.items?.length > 2 && (
+                                    <p className="text-xs text-gray-600">
+                                      +{order.items.length - 2} more items
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div>
+                                <h4 className="font-medium text-gray-900 mb-2">Shipping Address</h4>
+                                <div className="text-sm text-gray-600">
+                                  {typeof order.shippingAddress === 'string' ? (
+                                    (() => {
+                                      try {
+                                        const address = JSON.parse(order.shippingAddress);
+                                        return (
+                                          <>
+                                            <p>{address.fullName}</p>
+                                            <p>{address.address}</p>
+                                            <p>{address.city}</p>
+                                            <p>{address.phone}</p>
+                                          </>
+                                        );
+                                      } catch {
+                                        return <p>{order.shippingAddress}</p>;
+                                      }
+                                    })()
+                                  ) : (
+                                    <>
+                                      <p>{order.shippingAddress?.fullName}</p>
+                                      <p>{order.shippingAddress?.address}</p>
+                                      <p>{order.shippingAddress?.city}</p>
+                                      <p>{order.shippingAddress?.phone}</p>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="border-t pt-4 mt-4 flex items-center justify-between">
+                            <div className="text-sm text-gray-600">
+                              Payment: {order.paymentMethod === 'KHALTI' ? 'Khalti' : order.paymentMethod === 'COD' ? 'Cash on Delivery' : 'Card'}
+                              {order.paymentMethod === 'KHALTI' && order.paymentStatus === 'PENDING' && (
+                                <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                  Payment Pending
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {order.paymentMethod === 'KHALTI' && order.paymentStatus === 'PENDING' && (
+                                <button
+                                  onClick={() => handleRetryPayment(order)}
+                                  className="text-purple-600 hover:text-purple-700 font-medium text-sm bg-purple-50 px-3 py-1 rounded-md"
+                                >
+                                  Pay Now
+                                </button>
+                              )}
+                              <button
+                                onClick={() => navigate(`/orders/${order.id}`)}
+                                className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                              >
+                                View Details
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               )}
 

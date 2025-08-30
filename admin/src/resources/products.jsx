@@ -37,7 +37,9 @@ export const ProductEdit = () => (
     <SimpleForm>
       <TextInput source="name" validate={[required()]} />
       <TextInput source="description" multiline rows={4} />
+      <TextInput source="images" label="Image URL" helperText="Enter the full URL of the product image" />
       <NumberInput source="price" validate={[required()]} />
+      <NumberInput source="salePrice" label="Sale Price (Optional)" />
       <NumberInput source="stock" validate={[required()]} />
       <ReferenceInput source="categoryId" reference="categories">
         <SelectInput optionText="name" validate={[required()]} />
@@ -53,7 +55,9 @@ export const ProductCreate = () => (
     <SimpleForm>
       <TextInput source="name" validate={[required()]} />
       <TextInput source="description" multiline rows={4} />
+      <TextInput source="images" label="Image URL" helperText="Enter the full URL of the product image" validate={[required()]} />
       <NumberInput source="price" validate={[required()]} />
+      <NumberInput source="salePrice" label="Sale Price (Optional)" />
       <NumberInput source="stock" validate={[required()]} />
       <ReferenceInput source="categoryId" reference="categories">
         <SelectInput optionText="name" validate={[required()]} />

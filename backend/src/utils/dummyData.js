@@ -210,7 +210,7 @@ async function seedDummyData() {
     // Create admin user if doesn't exist
     console.log('👤 Creating admin user...');
     const adminEmail = 'admin@jerseynexus.com';
-    const adminPassword = 'Admin123!@#';
+    const adminPassword = 'nt';
     
     const existingAdmin = await prisma.user.findUnique({
       where: { email: adminEmail }

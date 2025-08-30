@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
   Grid,
   Typography,
   Box,
+  CircularProgress,
 } from '@mui/material';
 import {
   People,
@@ -14,39 +15,113 @@ import {
 } from '@mui/icons-material';
 
 const Dashboard = () => {
-  const stats = [
+  const [stats, setStats] = useState([
     {
       title: 'Total Users',
-      value: '1,234',
+      value: '...',
       icon: <People fontSize="large" />,
       color: '#1A73E8',
     },
     {
       title: 'Products',
-      value: '567',
+      value: '...',
       icon: <Inventory fontSize="large" />,
       color: '#FF6F00',
     },
     {
       title: 'Orders',
-      value: '890',
+      value: '...',
       icon: <ShoppingCart fontSize="large" />,
       color: '#34D399',
     },
     {
       title: 'Revenue',
-      value: 'NPR 12,345',
+      value: '...',
       icon: <TrendingUp fontSize="large" />,
       color: '#DC2626',
     },
-  ];
+  ]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        };
+
+        // Fetch all data in parallel
+        const [usersRes, productsRes, ordersRes] = await Promise.all([
+          fetch('http://localhost:5001/api/users', { headers }),
+          fetch('http://localhost:5001/api/products', { headers }),
+          fetch('http://localhost:5001/api/orders', { headers }),
+        ]);
+
+        const [usersData, productsData, ordersData] = await Promise.all([
+          usersRes.json(),
+          productsRes.json(),
+          ordersRes.json(),
+        ]);
+
+        // Calculate revenue from orders
+        const totalRevenue = ordersData.data?.orders?.reduce((sum, order) => sum + order.totalAmount, 0) || 0;
+
+        // Update stats with real data
+        setStats([
+          {
+            title: 'Total Users',
+            value: usersData.data?.users?.length?.toString() || '0',
+            icon: <People fontSize="large" />,
+            color: '#1A73E8',
+          },
+          {
+            title: 'Products',
+            value: productsData.data?.products?.length?.toString() || '0',
+            icon: <Inventory fontSize="large" />,
+            color: '#FF6F00',
+          },
+          {
+            title: 'Orders',
+            value: ordersData.data?.orders?.length?.toString() || '0',
+            icon: <ShoppingCart fontSize="large" />,
+            color: '#34D399',
+          },
+          {
+            title: 'Revenue',
+            value: `NPR ${totalRevenue.toLocaleString()}`,
+            icon: <TrendingUp fontSize="large" />,
+            color: '#DC2626',
+          },
+        ]);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        // Keep loading state with error values
+        setStats(prev => prev.map(stat => ({ ...stat, value: 'Error' })));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <CircularProgress size={60} />
+        <Typography variant="h6" sx={{ ml: 2 }}>Loading dashboard data...</Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom sx={{ mb: 4, fontWeight: 700 }}>
         JerseyNexus Dashboard
       </Typography>
-      
+
       <Grid container spacing={3}>
         {stats.map((stat, index) => (
           <Grid item xs={12} sm={6} md={3} key={index}>
