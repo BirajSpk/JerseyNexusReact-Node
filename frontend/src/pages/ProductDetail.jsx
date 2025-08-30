@@ -1,25 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Star, 
-  Heart, 
-  Share2, 
-  ShoppingCart, 
-  Plus, 
-  Minus, 
-  Truck, 
-  Shield, 
-  RotateCcw, 
+import {
+  Star,
+  Heart,
+  Share2,
+  ShoppingCart,
+  Plus,
+  Minus,
+  Truck,
+  Shield,
+  RotateCcw,
   CheckCircle,
   ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
   Zap
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../store/slices/cartSlice';
 import toast from 'react-hot-toast';
+import { productAPI } from '../utils/api';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -32,101 +31,127 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  // No image index needed for single image
   const [activeTab, setActiveTab] = useState('description');
   
-  // Mock product data
-  const mockProduct = {
-    id: 1,
-    name: 'Manchester United Home Jersey 2024',
-    slug: 'manchester-united-home-jersey-2024',
-    price: 2500,
-    originalPrice: 3000,
-    category: 'football-jerseys',
-    brand: 'Adidas',
-    images: [
-      { url: 'https://via.placeholder.com/600x600?text=Man+Utd+Jersey+1' },
-      { url: 'https://via.placeholder.com/600x600?text=Man+Utd+Jersey+2' },
-      { url: 'https://via.placeholder.com/600x600?text=Man+Utd+Jersey+3' },
-      { url: 'https://via.placeholder.com/600x600?text=Man+Utd+Jersey+4' }
-    ],
-    rating: 4.5,
-    reviewCount: 128,
-    stock: 15,
-    isNew: true,
-    description: 'Experience the passion of Old Trafford with the official Manchester United home jersey for the 2024 season. Crafted with premium quality materials and featuring the iconic red design, this jersey represents the rich heritage and winning spirit of one of the most successful clubs in football history.',
-    features: [
-      'Official Manchester United merchandise',
-      'Moisture-wicking Climalite fabric',
-      'Comfortable regular fit',
-      'Machine washable',
-      'Embroidered club crest',
-      'Sponsor logos included'
-    ],
-    sizes: [
-      { id: 'XS', name: 'Extra Small', available: true },
-      { id: 'S', name: 'Small', available: true },
-      { id: 'M', name: 'Medium', available: true },
-      { id: 'L', name: 'Large', available: true },
-      { id: 'XL', name: 'Extra Large', available: true },
-      { id: 'XXL', name: 'Double XL', available: false }
-    ],
-    specifications: {
-      'Material': '100% Polyester',
-      'Care Instructions': 'Machine wash cold, tumble dry low',
-      'Country of Origin': 'Thailand',
-      'Season': '2024/25',
-      'Official Licensed': 'Yes'
-    },
-    reviews: [
-      {
-        id: 1,
-        user: 'Rajesh K.',
-        rating: 5,
-        date: '2024-01-15',
-        comment: 'Excellent quality jersey! Perfect fit and the material feels premium. Highly recommended for any United fan.'
-      },
-      {
-        id: 2,
-        user: 'Priya S.',
-        rating: 4,
-        date: '2024-01-10',
-        comment: 'Great jersey, fast delivery. Only issue was the sizing runs slightly small, so order one size up.'
-      },
-      {
-        id: 3,
-        user: 'Amit L.',
-        rating: 5,
-        date: '2024-01-08',
-        comment: 'Authentic jersey with perfect printing. My son loves it! Great quality for the price.'
-      }
-    ]
-  };
+
 
   useEffect(() => {
-    // Simulate API call
-    setLoading(true);
-    setTimeout(() => {
-      setProduct(mockProduct);
-      setLoading(false);
-    }, 1000);
+    const fetchProduct = async () => {
+      if (!slug) return;
+
+      setLoading(true);
+      try {
+        const response = await productAPI.getProductBySlug(slug);
+
+        if (response.data.success) {
+          const productData = response.data.data.product;
+
+          // Check if product data is empty or null
+          if (!productData || Object.keys(productData).length === 0) {
+            throw new Error('Product not found');
+          }
+
+          // Process images - handle both string arrays and object arrays
+          console.log('Raw product images:', productData.images);
+          let processedImages = [];
+
+          if (productData.images) {
+            // Backend contains single image URL as string
+            const imageUrl = productData.images;
+            const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001'}${imageUrl}`;
+
+            processedImages = [{
+              url: fullImageUrl,
+              altText: productData.name || 'Product Image'
+            }];
+          }
+
+          // If no images, add placeholder
+          if (processedImages.length === 0) {
+            processedImages = [{
+              url: 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image',
+              altText: productData.name || 'Product Image'
+            }];
+          }
+
+          console.log('Processed images:', processedImages);
+
+          // Process sizes - handle both string arrays and object arrays
+          let processedSizes = [];
+          if (productData.sizes) {
+            if (Array.isArray(productData.sizes)) {
+              processedSizes = productData.sizes.map(size => {
+                if (typeof size === 'string') {
+                  return { id: size, name: size, available: true };
+                } else {
+                  return { id: size.id || size.name, name: size.name || size.id, available: size.available !== false };
+                }
+              });
+            }
+          }
+
+          // Default sizes if none provided
+          if (processedSizes.length === 0) {
+            processedSizes = [
+              { id: 'S', name: 'Small', available: true },
+              { id: 'M', name: 'Medium', available: true },
+              { id: 'L', name: 'Large', available: true },
+              { id: 'XL', name: 'Extra Large', available: true }
+            ];
+          }
+
+          // Set processed product data with defaults
+          setProduct({
+            ...productData,
+            images: processedImages,
+            sizes: processedSizes,
+            colors: productData.colors || ['Default'],
+            rating: productData.rating || 4.5,
+            reviewCount: productData.reviews?.length || 0,
+            isNew: productData.featured || false,
+            features: productData.features || [],
+            specifications: productData.specifications || {},
+            reviews: productData.reviews || []
+          });
+        } else {
+          throw new Error('Product not found');
+        }
+      } catch (error) {
+        console.error('Error fetching product:', error);
+        toast.error('Failed to load product details');
+        setProduct(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
   }, [slug]);
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
+    // Check if product has sizes and none is selected
+    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
       toast.error('Please select a size');
       return;
     }
-    
-    dispatch(addToCart({ 
-      product: { ...product, selectedSize }, 
-      quantity 
+
+    dispatch(addToCart({
+      product: {
+        ...product,
+        selectedSize: selectedSize || null
+      },
+      quantity,
+      size: selectedSize || null
     }));
-    toast.success(`${quantity} x ${product.name} (${selectedSize}) added to cart!`);
+
+    const sizeText = selectedSize ? ` (${selectedSize})` : '';
+    toast.success(`${quantity} x ${product.name}${sizeText} added to cart!`);
   };
 
   const handleBuyNow = () => {
-    if (!selectedSize) {
+    // Check if product has sizes and none is selected
+    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
       toast.error('Please select a size');
       return;
     }
@@ -144,11 +169,15 @@ const ProductDetail = () => {
 
     // Create order item for checkout
     const orderItem = {
-      product: { ...product, selectedSize },
-      quantity
+      product: {
+        ...product,
+        selectedSize: selectedSize || null
+      },
+      quantity,
+      size: selectedSize || null
     };
 
-    const orderTotal = product.price * quantity;
+    const orderTotal = (product.salePrice || product.price) * quantity;
 
     // Navigate to checkout with order data
     navigate('/checkout', {
@@ -165,17 +194,7 @@ const ProductDetail = () => {
     }
   };
 
-  const nextImage = () => {
-    setSelectedImageIndex((prev) => 
-      prev === product.images.length - 1 ? 0 : prev + 1
-    );
-  };
-
-  const prevImage = () => {
-    setSelectedImageIndex((prev) => 
-      prev === 0 ? product.images.length - 1 : prev - 1
-    );
-  };
+  // No image navigation needed for single image
 
   if (loading) {
     return (
@@ -225,7 +244,7 @@ const ProductDetail = () => {
           <span>Back to Products</span>
         </button>
         <span>/</span>
-        <span>{product.category.replace('-', ' ')}</span>
+        <span>{product.category?.name || 'Category'}</span>
         <span>/</span>
         <span className="text-dark">{product.name}</span>
       </motion.div>
@@ -240,9 +259,12 @@ const ProductDetail = () => {
           {/* Main Image */}
           <div className="relative mb-4">
             <img
-              src={product.images[selectedImageIndex].url}
-              alt={product.name}
+              src={product.images?.[0]?.url || 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image'}
+              alt={product.images?.[0]?.altText || product.name}
               className="w-full aspect-square object-cover rounded-lg"
+              onError={(e) => {
+                e.target.src = 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image';
+              }}
             />
             {product.isNew && (
               <span className="absolute top-4 left-4 bg-secondary text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -255,43 +277,10 @@ const ProductDetail = () => {
               </span>
             )}
             
-            {/* Navigation Arrows */}
-            {product.images.length > 1 && (
-              <>
-                <button
-                  onClick={prevImage}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-colors"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={nextImage}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-colors"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-              </>
-            )}
+            {/* No navigation arrows needed for single image */}
           </div>
           
-          {/* Thumbnail Images */}
-          <div className="grid grid-cols-4 gap-2">
-            {product.images.map((image, index) => (
-              <button
-                key={index}
-                onClick={() => setSelectedImageIndex(index)}
-                className={`aspect-square rounded-lg overflow-hidden border-2 transition-colors ${
-                  selectedImageIndex === index ? 'border-primary' : 'border-transparent'
-                }`}
-              >
-                <img
-                  src={image.url}
-                  alt={`${product.name} ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
-          </div>
+          {/* No thumbnail gallery needed for single image */}
         </motion.div>
 
         {/* Product Info */}
@@ -475,26 +464,34 @@ const ProductDetail = () => {
             <div>
               <h3 className="text-xl font-semibold text-dark mb-4">Product Description</h3>
               <p className="text-muted leading-relaxed mb-6">{product.description}</p>
-              <h4 className="font-semibold text-dark mb-3">Key Features:</h4>
-              <ul className="list-disc list-inside space-y-2 text-muted">
-                {product.features.map((feature, index) => (
-                  <li key={index}>{feature}</li>
-                ))}
-              </ul>
+              {product.features && product.features.length > 0 && (
+                <>
+                  <h4 className="font-semibold text-dark mb-3">Key Features:</h4>
+                  <ul className="list-disc list-inside space-y-2 text-muted">
+                    {product.features.map((feature, index) => (
+                      <li key={index}>{feature}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           )}
 
           {activeTab === 'specifications' && (
             <div>
               <h3 className="text-xl font-semibold text-dark mb-4">Specifications</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {Object.entries(product.specifications).map(([key, value]) => (
-                  <div key={key} className="flex justify-between py-2 border-b border-gray-100">
-                    <span className="font-medium text-dark">{key}:</span>
-                    <span className="text-muted">{value}</span>
-                  </div>
-                ))}
-              </div>
+              {product.specifications && Object.keys(product.specifications).length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {Object.entries(product.specifications).map(([key, value]) => (
+                    <div key={key} className="flex justify-between py-2 border-b border-gray-100">
+                      <span className="font-medium text-dark">{key}:</span>
+                      <span className="text-muted">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted">No specifications available for this product.</p>
+              )}
             </div>
           )}
 
@@ -521,34 +518,38 @@ const ProductDetail = () => {
               </div>
               
               <div className="space-y-6">
-                {product.reviews.map((review) => (
-                  <div key={review.id} className="border-b border-gray-100 pb-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
-                          {review.user.charAt(0)}
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-dark">{review.user}</h4>
-                          <div className="flex items-center space-x-1">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-4 w-4 ${
-                                  i < review.rating 
-                                    ? 'text-yellow-400 fill-current' 
-                                    : 'text-gray-300'
-                                }`}
-                              />
-                            ))}
+                {product.reviews && product.reviews.length > 0 ? (
+                  product.reviews.map((review) => (
+                    <div key={review.id} className="border-b border-gray-100 pb-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
+                            {(review.user?.name || review.user || 'U').charAt(0)}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-dark">{review.user?.name || review.user || 'Anonymous'}</h4>
+                            <div className="flex items-center space-x-1">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`h-4 w-4 ${
+                                    i < review.rating
+                                      ? 'text-yellow-400 fill-current'
+                                      : 'text-gray-300'
+                                  }`}
+                                />
+                              ))}
+                            </div>
                           </div>
                         </div>
+                        <span className="text-sm text-muted">{review.date || review.createdAt}</span>
                       </div>
-                      <span className="text-sm text-muted">{review.date}</span>
+                      <p className="text-muted leading-relaxed">{review.comment}</p>
                     </div>
-                    <p className="text-muted leading-relaxed">{review.comment}</p>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-muted text-center py-8">No reviews yet. Be the first to review this product!</p>
+                )}
               </div>
             </div>
           )}

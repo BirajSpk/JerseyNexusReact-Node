@@ -4,7 +4,13 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
+const WebSocketService = require('./utils/websocket');
+const DatabaseChecker = require('./utils/dbCheck');
 require('dotenv').config();
+const prisma = require("../src/config/database.js") 
+const seedDummyData = require('./utils/dummyData');
+prisma.$connect();
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -13,11 +19,14 @@ const categoryRoutes = require('./routes/categories');
 const orderRoutes = require('./routes/orders');
 const reviewRoutes = require('./routes/reviews');
 const blogRoutes = require('./routes/blogs');
+const paymentRoutes = require('./routes/payments');
+const uploadRoutes = require('./routes/uploads');
 
 const errorHandler = require('./middlewares/errorHandler');
 const notFound = require('./middlewares/notFound');
 
 const app = express();
+const server = http.createServer(app);
 
 // Security middleware
 app.use(helmet());
@@ -64,6 +73,30 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Database health check endpoint
+app.get('/health/database', async (req, res) => {
+  const dbChecker = new DatabaseChecker();
+  try {
+    const result = await dbChecker.runFullCheck();
+    await dbChecker.disconnect();
+    
+    res.status(result.success ? 200 : 500).json({
+      status: result.success ? 'OK' : 'ERROR',
+      message: result.success ? 'Database is healthy' : 'Database has issues',
+      timestamp: new Date().toISOString(),
+      details: result.details
+    });
+  } catch (error) {
+    await dbChecker.disconnect();
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Database check failed',
+      timestamp: new Date().toISOString(),
+      error: error.message
+    });
+  }
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -72,6 +105,8 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/blogs', blogRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 // Welcome route
 app.get('/', (req, res) => {
@@ -88,7 +123,9 @@ app.get('/', (req, res) => {
       categories: '/api/categories',
       orders: '/api/orders',
       reviews: '/api/reviews',
-      blogs: '/api/blogs'
+      blogs: '/api/blogs',
+      payments: '/api/payments',
+      uploads: '/api/uploads'
     }
   });
 });
@@ -99,10 +136,42 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 JerseyNexus API running on port ${PORT}`);
-  console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 Health check: http://localhost:${PORT}/health`);
+// Database startup check
+async function startServer() {
+  const dbChecker = new DatabaseChecker();
+  
+  try {
+    // Run database check on startup
+    const dbResult = await dbChecker.runFullCheck();
+    
+    if (!dbResult.success) {
+      console.log('⚠️  Warning: Database issues detected but server will continue...');
+    }
+    
+    await dbChecker.disconnect();
+  } catch (error) {
+    console.error('❌ Database check failed on startup:', error.message);
+    console.log('⚠️  Warning: Continuing without database verification...');
+  }
+
+  server.listen(PORT, () => {
+    console.log(`🚀 JerseyNexus API running on port ${PORT}`);
+    console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🌐 Health check: http://localhost:${PORT}/health`);
+    console.log(`🗄️  Database check: http://localhost:${PORT}/health/database`);
+    console.log(`🔌 WebSocket server ready`);
+  });
+
+  // Initialize WebSocket service
+  WebSocketService.initialize(server);
+}
+
+
+
+// Start the server
+startServer().catch(error => {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
 });
 
 module.exports = app;

@@ -13,7 +13,6 @@ import {
   Heart
 } from 'lucide-react';
 import { logout } from '../../store/slices/authSlice';
-import { toggleCart } from '../../store/slices/cartSlice';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -41,11 +40,9 @@ const Navbar = () => {
   };
 
   const navigationItems = [
-    { name: 'Home', href: '/' },
     { name: 'Products', href: '/products' },
     { name: 'Blogs', href: '/blogs' },
     { name: 'About', href: '/about' },
-    { name: 'Contact', href: '/contact' },
   ];
 
   return (
@@ -124,7 +121,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {/* Cart */}
             <button
-              onClick={() => dispatch(toggleCart())}
+              onClick={() => navigate('/cart')}
               className="relative p-2 text-muted hover:text-primary transition-colors"
             >
               <ShoppingCart className="h-6 w-6" />

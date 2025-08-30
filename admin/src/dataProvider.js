@@ -1,7 +1,7 @@
 // Simple data provider for JerseyNexus Admin
 // In production, this would connect to your actual API
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:5001/api';
 
 const dataProvider = {
   getList: async (resource, params) => {
@@ -27,9 +27,39 @@ const dataProvider = {
     
     const data = await response.json();
     
+    // Handle different response structures for different resources
+    let items = [];
+    let total = 0;
+
+    if (data.data[resource]) {
+      items = data.data[resource];
+      total = data.data.pagination?.totalItems || data.data[resource].length;
+    } else if (data.data.orders && resource === 'orders') {
+      items = data.data.orders;
+      total = data.data.orders.length;
+    } else if (data.data.users && resource === 'users') {
+      items = data.data.users;
+      total = data.data.pagination?.totalUsers || data.data.users.length;
+    } else if (data.data.products && resource === 'products') {
+      items = data.data.products;
+      total = data.data.pagination?.totalItems || data.data.products.length;
+    } else if (data.data.categories && resource === 'categories') {
+      items = data.data.categories;
+      total = data.data.categories.length;
+    } else if (data.data.reviews && resource === 'reviews') {
+      items = data.data.reviews;
+      total = data.data.reviews.length;
+    } else if (data.data.blogs && resource === 'blogs') {
+      items = data.data.blogs;
+      total = data.data.blogs.length;
+    } else {
+      items = data.data || [];
+      total = items.length;
+    }
+
     return {
-      data: data.data[resource] || data.data || [],
-      total: data.data.pagination?.totalItems || data.data.length || 0,
+      data: items,
+      total: total,
     };
   },
 
@@ -39,13 +69,22 @@ const dataProvider = {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
     });
-    
+
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
-    
+
     const data = await response.json();
-    return { data: data.data[resource.slice(0, -1)] || data.data };
+
+    // Handle different response structures
+    let record = data.data;
+    if (data.data[resource.slice(0, -1)]) {
+      record = data.data[resource.slice(0, -1)];
+    } else if (data.data[resource]) {
+      record = data.data[resource];
+    }
+
+    return { data: record };
   },
 
   getMany: async (resource, params) => {

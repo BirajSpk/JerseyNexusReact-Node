@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { asyncHandler, sendResponse, getPagination } = require('../utils/helpers');
+const WebSocketService = require('../utils/websocket');
 
 const prisma = new PrismaClient();
 
@@ -227,10 +228,100 @@ const getUserStats = asyncHandler(async (req, res) => {
   sendResponse(res, 200, true, 'User statistics retrieved successfully', { stats });
 });
 
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+const updateProfile = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { name, email, phone, address, avatar } = req.body;
+
+  // Check if email is already taken by another user
+  if (email && email !== req.user.email) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+    
+    if (existingUser) {
+      return sendResponse(res, 400, false, 'Email already taken');
+    }
+  }
+
+  const updateData = {};
+  if (name) updateData.name = name;
+  if (email) updateData.email = email;
+  if (phone) updateData.phone = phone;
+  if (address) updateData.address = JSON.stringify(address);
+  if (avatar) updateData.avatar = avatar;
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: updateData,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      address: true,
+      avatar: true,
+      role: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  });
+
+  // Emit profile update via WebSocket
+  WebSocketService.emitProfileUpdate(userId, updatedUser);
+
+  sendResponse(res, 200, true, 'Profile updated successfully', { user: updatedUser });
+});
+
+// @desc    Get current user profile
+// @route   GET /api/users/profile
+// @access  Private
+const getProfile = asyncHandler(async (req, res) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      address: true,
+      avatar: true,
+      role: true,
+      createdAt: true,
+      updatedAt: true,
+      _count: {
+        select: {
+          orders: true,
+          reviews: true
+        }
+      }
+    }
+  });
+
+  if (!user) {
+    return sendResponse(res, 404, false, 'User not found');
+  }
+
+  // Parse address if it exists
+  if (user.address) {
+    try {
+      user.address = JSON.parse(user.address);
+    } catch (error) {
+      user.address = null;
+    }
+  }
+
+  sendResponse(res, 200, true, 'Profile retrieved successfully', { user });
+});
+
 module.exports = {
   getUsers,
   getUserById,
   updateUserRole,
   deleteUser,
   getUserStats,
+  updateProfile,
+  getProfile,
 };

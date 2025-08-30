@@ -8,15 +8,28 @@ const OrderSuccess = () => {
   const navigate = useNavigate();
   
   const orderData = location.state?.orderData;
-  
+  const order = location.state?.order;
+  const paymentMethod = location.state?.paymentMethod;
+
+  // Handle both old and new data structures
+  const actualOrderData = orderData || order;
+
   // Redirect if no order data
-  if (!orderData) {
+  if (!actualOrderData) {
     navigate('/');
     return null;
   }
-  
-  const { items, total, shipping, paymentMethod } = orderData;
-  const orderId = `JN${Date.now().toString().slice(-6)}`;
+
+  // Extract data based on structure
+  const items = actualOrderData.items || [];
+  const total = actualOrderData.totalAmount || actualOrderData.total || 0;
+  const shipping = actualOrderData.shippingAddress ?
+    (typeof actualOrderData.shippingAddress === 'string' ?
+      JSON.parse(actualOrderData.shippingAddress) :
+      actualOrderData.shippingAddress) :
+    actualOrderData.shipping;
+  const finalPaymentMethod = paymentMethod || actualOrderData.paymentMethod || 'cod';
+  const orderId = actualOrderData.id ? `#${actualOrderData.id.slice(-8)}` : `JN${Date.now().toString().slice(-6)}`;
   
   return (
     <div className="min-h-screen bg-neutral py-12">
@@ -58,19 +71,25 @@ const OrderSuccess = () => {
               {items.map((item, index) => (
                 <div key={index} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
                   <img
-                    src={item.product.images?.[0]?.url || 'https://via.placeholder.com/80x80'}
-                    alt={item.product.name}
+                    src={item.image || 'https://placehold.co/80x80/e5e7eb/6b7280?text=Product'}
+                    alt={item.name}
                     className="w-16 h-16 object-cover rounded"
+                    onError={(e) => {
+                      e.target.src = 'https://placehold.co/80x80/e5e7eb/6b7280?text=Product';
+                    }}
                   />
                   <div className="flex-1">
-                    <h3 className="font-medium text-dark">{item.product.name}</h3>
-                    {item.product.selectedSize && (
-                      <p className="text-sm text-muted">Size: {item.product.selectedSize}</p>
+                    <h3 className="font-medium text-dark">{item.name}</h3>
+                    {item.size && (
+                      <p className="text-sm text-muted">Size: {item.size}</p>
+                    )}
+                    {item.color && (
+                      <p className="text-sm text-muted">Color: {item.color}</p>
                     )}
                     <p className="text-sm text-muted">Quantity: {item.quantity}</p>
                   </div>
                   <span className="font-semibold text-dark">
-                    NPR {(item.product.price * item.quantity).toLocaleString()}
+                    NPR {(item.price * item.quantity).toLocaleString()}
                   </span>
                 </div>
               ))}
@@ -82,7 +101,7 @@ const OrderSuccess = () => {
                 <span>NPR {(total + (total > 5000 ? 0 : 200)).toLocaleString()}</span>
               </div>
               <div className="text-sm text-muted mt-1">
-                Payment Method: {paymentMethod === 'card' ? 'Credit/Debit Card' : 'Cash on Delivery'}
+                Payment Method: {finalPaymentMethod === 'khalti' ? 'Khalti Digital Wallet' : finalPaymentMethod === 'card' ? 'Credit/Debit Card' : 'Cash on Delivery'}
               </div>
             </div>
           </motion.div>

@@ -39,33 +39,52 @@ const cartSlice = createSlice({
   },
   reducers: {
     addToCart: (state, action) => {
-      const { product, quantity = 1 } = action.payload;
-      const existingItem = state.items.find(item => item.id === product.id);
-      
+      const { product, quantity = 1, size, color } = action.payload;
+
+      // Create unique item key based on product ID, size, and color
+      const itemKey = `${product.id}-${size || 'default'}-${color || 'default'}`;
+      const existingItem = state.items.find(item => item.key === itemKey);
+
+      // Process single product image URL
+      let productImage = '';
+      if (product.images) {
+        // Backend contains single image URL as string
+        productImage = product.images;
+
+        // Ensure image has proper URL prefix
+        if (!productImage.startsWith('http')) {
+          productImage = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001'}${productImage}`;
+        }
+      }
+
       if (existingItem) {
         existingItem.quantity += quantity;
       } else {
         state.items.push({
+          key: itemKey,
           id: product.id,
           name: product.name,
-          price: product.price,
-          image: product.images?.[0]?.url || '',
+          price: product.salePrice || product.price,
+          originalPrice: product.price,
+          image: productImage,
           slug: product.slug,
           quantity,
           stock: product.stock,
+          size: size || null,
+          color: color || null,
         });
       }
-      
+
       const totals = calculateTotals(state.items);
       state.totalItems = totals.totalItems;
       state.totalAmount = totals.totalAmount;
-      
+
       saveCartToStorage(state.items);
     },
     
     removeFromCart: (state, action) => {
-      const productId = action.payload;
-      state.items = state.items.filter(item => item.id !== productId);
+      const itemKey = action.payload;
+      state.items = state.items.filter(item => item.key !== itemKey);
       
       const totals = calculateTotals(state.items);
       state.totalItems = totals.totalItems;
@@ -75,8 +94,8 @@ const cartSlice = createSlice({
     },
     
     updateQuantity: (state, action) => {
-      const { productId, quantity } = action.payload;
-      const item = state.items.find(item => item.id === productId);
+      const { itemKey, quantity } = action.payload;
+      const item = state.items.find(item => item.key === itemKey);
       
       if (item && quantity > 0 && quantity <= item.stock) {
         item.quantity = quantity;

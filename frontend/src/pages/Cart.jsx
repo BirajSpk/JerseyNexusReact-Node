@@ -25,16 +25,16 @@ const Cart = () => {
   
   const { items, totalItems, totalAmount } = useSelector((state) => state.cart);
   
-  const handleQuantityChange = (productId, newQuantity) => {
+  const handleQuantityChange = (itemKey, newQuantity) => {
     if (newQuantity <= 0) {
-      handleRemoveItem(productId);
+      handleRemoveItem(itemKey);
     } else {
-      dispatch(updateQuantity({ productId, quantity: newQuantity }));
+      dispatch(updateQuantity({ itemKey, quantity: newQuantity }));
     }
   };
-  
-  const handleRemoveItem = (productId) => {
-    dispatch(removeFromCart(productId));
+
+  const handleRemoveItem = (itemKey) => {
+    dispatch(removeFromCart(itemKey));
     toast.success('Item removed from cart');
   };
   
@@ -124,7 +124,7 @@ const Cart = () => {
             <div className="divide-y divide-gray-200">
               {items.map((item, index) => (
                 <motion.div
-                  key={item.id}
+                  key={item.key}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -134,15 +134,22 @@ const Cart = () => {
                     {/* Product Image */}
                     <div className="flex-shrink-0">
                       <img
-                        src={item.image || 'https://via.placeholder.com/120x120?text=Product'}
+                        src={item.image || 'https://placehold.co/120x120/e5e7eb/6b7280?text=Product'}
                         alt={item.name}
-                        className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                        className="w-20 h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => navigate(`/products/${item.slug}`)}
+                        onError={(e) => {
+                          e.target.src = 'https://placehold.co/120x120/e5e7eb/6b7280?text=Product';
+                        }}
                       />
                     </div>
-                    
+
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-dark mb-1 line-clamp-2">
+                      <h3
+                        className="font-semibold text-dark mb-1 line-clamp-2 cursor-pointer hover:text-primary transition-colors"
+                        onClick={() => navigate(`/products/${item.slug}`)}
+                      >
                         {item.name}
                       </h3>
                       {item.selectedSize && (
@@ -160,14 +167,14 @@ const Cart = () => {
                     <div className="flex items-center space-x-3">
                       <div className="flex items-center border border-gray-300 rounded-lg">
                         <button
-                          onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                          onClick={() => handleQuantityChange(item.key, item.quantity - 1)}
                           className="p-2 hover:bg-gray-50 transition-colors"
                         >
                           <Minus className="w-4 h-4" />
                         </button>
                         <span className="px-4 py-2 font-semibold">{item.quantity}</span>
                         <button
-                          onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                          onClick={() => handleQuantityChange(item.key, item.quantity + 1)}
                           disabled={item.quantity >= item.stock}
                           className="p-2 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -188,7 +195,7 @@ const Cart = () => {
                         <Heart className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleRemoveItem(item.id)}
+                        onClick={() => handleRemoveItem(item.key)}
                         className="p-2 text-muted hover:text-danger transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />

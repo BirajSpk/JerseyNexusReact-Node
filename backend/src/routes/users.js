@@ -5,6 +5,8 @@ const {
   updateUserRole,
   deleteUser,
   getUserStats,
+  updateProfile,
+  getProfile,
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middlewares/auth');
 const { body } = require('express-validator');
@@ -14,6 +16,21 @@ const router = express.Router();
 
 // Apply protect middleware to all routes
 router.use(protect);
+
+// @desc    Get current user profile
+// @route   GET /api/users/profile
+// @access  Private
+router.get('/profile', getProfile);
+
+// @desc    Update current user profile
+// @route   PUT /api/users/profile
+// @access  Private
+router.put('/profile', [
+  body('name').optional().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+  body('email').optional().isEmail().withMessage('Must be a valid email'),
+  body('phone').optional().isLength({ min: 10 }).withMessage('Phone must be at least 10 characters'),
+  validateRequest
+], updateProfile);
 
 // @desc    Welcome message
 // @route   GET /api/users

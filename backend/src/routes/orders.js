@@ -1,6 +1,7 @@
 const express = require('express');
 const {
   getOrders,
+  getOrder,
   createOrder,
   updateOrderStatus,
 } = require('../controllers/orderController');
@@ -13,6 +14,7 @@ router.use(protect);
 
 // User routes
 router.get('/', getOrders);
+router.get('/:id', getOrder);
 router.post('/', createOrder);
 
 // Admin routes
