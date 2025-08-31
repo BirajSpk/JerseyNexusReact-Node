@@ -1,16 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  Plus, 
-  Minus, 
-  Trash2, 
-  ShoppingBag, 
-  ArrowRight, 
+import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
+import {
+  Plus,
+  Minus,
+  Trash2,
+  ShoppingBag,
+  ArrowRight,
   ArrowLeft,
   Heart,
   Gift
-} from 'lucide-react';
+} from '../components/ui/ProfessionalIcon';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   updateQuantity, 

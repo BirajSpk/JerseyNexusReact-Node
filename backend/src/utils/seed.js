@@ -79,13 +79,13 @@ async function main() {
       metaTitle: 'Manchester United Home Jersey 2024 - JerseyNexus',
       metaDescription: 'Get the official Manchester United home jersey 2024 at JerseyNexus. Premium quality, authentic design.',
       categoryId: footballCategory.id,
-      images: [
+      images: JSON.stringify([
         {
           url: '/uploads/man-utd-home.jpg',
           altText: 'Manchester United Home Jersey 2024',
           isPrimary: true
         }
-      ],
+      ]),
     },
     {
       name: 'Real Madrid Away Jersey 2024',
@@ -96,13 +96,13 @@ async function main() {
       metaTitle: 'Real Madrid Away Jersey 2024 - JerseyNexus',
       metaDescription: 'Shop the official Real Madrid away jersey 2024 at JerseyNexus. High-quality materials and authentic design.',
       categoryId: footballCategory.id,
-      images: [
+      images: JSON.stringify([
         {
           url: '/uploads/real-madrid-away.jpg',
           altText: 'Real Madrid Away Jersey 2024',
           isPrimary: true
         }
-      ],
+      ]),
     },
     {
       name: 'Barcelona Home Jersey 2024',
@@ -113,13 +113,13 @@ async function main() {
       metaTitle: 'Barcelona Home Jersey 2024 - JerseyNexus',
       metaDescription: 'Buy the official Barcelona home jersey 2024 at JerseyNexus. Iconic blaugrana colors, premium quality.',
       categoryId: footballCategory.id,
-      images: [
+      images: JSON.stringify([
         {
           url: '/uploads/barcelona-home.jpg',
           altText: 'Barcelona Home Jersey 2024',
           isPrimary: true
         }
-      ],
+      ]),
     },
   ];
 
@@ -159,13 +159,13 @@ async function main() {
       published: true,
       categoryId: blogCategory.id,
       authorId: admin.id,
-      images: [
+      images: JSON.stringify([
         {
           url: '/uploads/jerseynexus-welcome.jpg',
           altText: 'JerseyNexus Welcome Banner',
           isPrimary: true
         }
-      ],
+      ]),
     },
   });
 

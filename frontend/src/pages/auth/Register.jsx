@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowRight } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { motion } from '../../utils/motion.jsx'; // Temporary motion wrapper
+import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowRight } from '../../components/ui/ProfessionalIcon';
+import { useForm } from '../../utils/forms'; // Temporary form wrapper
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
 import { setLoading, setError, loginSuccess, clearError } from '../../store/slices/authSlice';

@@ -6,9 +6,13 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
+    allowedHosts: true,
+    hmr: {
+      port: 3000
+    },
     proxy: {
       '/api': {
-        target: 'http://localhost:5001',
+        target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
       },
@@ -22,5 +26,18 @@ export default defineConfig({
     alias: {
       '@': '/src',
     },
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@reduxjs/toolkit',
+      'react-redux',
+      'immer',
+      'axios',
+      'react-hot-toast'
+    ],
+    force: true
   },
 });

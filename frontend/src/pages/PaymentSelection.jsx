@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  CreditCard, 
-  Truck, 
-  CheckCircle, 
+import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
+import {
+  CreditCard,
+  Truck,
+  CheckCircle,
   ArrowLeft,
   Clock,
   Shield,
   Banknote
-} from 'lucide-react';
+} from '../components/ui/ProfessionalIcon';
 import toast from 'react-hot-toast';
 import { paymentAPI } from '../utils/api';
 
@@ -21,17 +21,17 @@ const PaymentSelection = () => {
   const [selectedPayment, setSelectedPayment] = useState('');
   
   // Get order data from location state
-  const { order, paymentMethod, totalAmount } = location.state || {};
-  
+  const { order, totalAmount } = location.state || {};
+
   useEffect(() => {
     if (!order) {
       navigate('/cart');
       return;
     }
-    
+
     // Set default payment method
-    setSelectedPayment(paymentMethod || 'cod');
-  }, [order, paymentMethod, navigate]);
+    setSelectedPayment('cod');
+  }, [order, navigate]);
 
   const handlePaymentSelection = async () => {
     if (!selectedPayment) {

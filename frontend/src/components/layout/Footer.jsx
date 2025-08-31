@@ -1,14 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  Facebook, 
-  Instagram, 
-  Twitter, 
-  Mail, 
-  Phone, 
-  MapPin 
-} from 'lucide-react';
+import { motion } from '../../utils/motion.jsx'; // Temporary motion wrapper
+import {
+  Facebook,
+  Instagram,
+  Twitter,
+  Mail,
+  Phone,
+  MapPin
+} from '../ui/ProfessionalIcon';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();

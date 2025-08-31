@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
 import {
   Star,
   Heart,
@@ -14,11 +14,14 @@ import {
   CheckCircle,
   ArrowLeft,
   Zap
-} from 'lucide-react';
+} from '../components/ui/ProfessionalIcon';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../store/slices/cartSlice';
 import toast from 'react-hot-toast';
 import { productAPI } from '../utils/api';
+import BackButton from '../components/ui/BackButton';
+import RelatedProducts from '../components/RelatedProducts';
+import ImageZoom from '../components/ImageZoom';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -59,7 +62,7 @@ const ProductDetail = () => {
           if (productData.images) {
             // Backend contains single image URL as string
             const imageUrl = productData.images;
-            const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001'}${imageUrl}`;
+            const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}${imageUrl}`;
 
             processedImages = [{
               url: fullImageUrl,
@@ -70,7 +73,7 @@ const ProductDetail = () => {
           // If no images, add placeholder
           if (processedImages.length === 0) {
             processedImages = [{
-              url: 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image',
+              url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjYwMCIgdmlld0JveD0iMCAwIDYwMCA2MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjYwMCIgaGVpZ2h0PSI2MDAiIGZpbGw9IiNlNWU3ZWIiLz48dGV4dCB4PSIzMDAiIHk9IjMxMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiBmaWxsPSIjNmI3MjgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Qcm9kdWN0IEltYWdlPC90ZXh0Pjwvc3ZnPg==',
               altText: productData.name || 'Product Image'
             }];
           }
@@ -256,15 +259,12 @@ const ProductDetail = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
         >
-          {/* Main Image */}
+          {/* Main Image with Zoom */}
           <div className="relative mb-4">
-            <img
-              src={product.images?.[0]?.url || 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image'}
+            <ImageZoom
+              src={product.images?.[0]?.url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjYwMCIgdmlld0JveD0iMCAwIDYwMCA2MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjYwMCIgaGVpZ2h0PSI2MDAiIGZpbGw9IiNlNWU3ZWIiLz48dGV4dCB4PSIzMDAiIHk9IjMxMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiBmaWxsPSIjNmI3MjgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Qcm9kdWN0IEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
               alt={product.images?.[0]?.altText || product.name}
-              className="w-full aspect-square object-cover rounded-lg"
-              onError={(e) => {
-                e.target.src = 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image';
-              }}
+              className="w-full aspect-square rounded-lg"
             />
             {product.isNew && (
               <span className="absolute top-4 left-4 bg-secondary text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -555,6 +555,9 @@ const ProductDetail = () => {
           )}
         </div>
       </motion.div>
+
+      {/* Related Products Section */}
+      {product && <RelatedProducts currentProduct={product} />}
     </div>
   );
 };

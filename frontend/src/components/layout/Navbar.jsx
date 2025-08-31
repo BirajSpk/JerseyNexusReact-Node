@@ -1,37 +1,97 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { motion } from 'framer-motion';
-import { 
-  ShoppingCart, 
-  User, 
-  Menu, 
-  X, 
+import { motion } from '../../utils/motion.jsx'; // Temporary motion wrapper
+import {
+  ShoppingCart,
+  User,
+  Menu,
+  X,
   Search,
   LogOut,
   Package,
   Heart
-} from 'lucide-react';
+} from '../ui/ProfessionalIcon';
 import { logout } from '../../store/slices/authSlice';
+import { productAPI } from '../../utils/api';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [allProducts, setAllProducts] = useState([]);
   
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  
+  const searchRef = useRef(null);
+
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { totalItems } = useSelector((state) => state.cart);
+
+  // Load all products for search suggestions
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const response = await productAPI.getProducts({ limit: 100 });
+        setAllProducts(response.data.data?.products || response.data.data || []);
+      } catch (error) {
+        console.error('Error loading products for search:', error);
+      }
+    };
+    loadProducts();
+  }, []);
+
+  // Handle search input changes and generate suggestions
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    if (query.trim().length > 0) {
+      const suggestions = allProducts
+        .filter(product =>
+          product.name.toLowerCase().includes(query.toLowerCase()) ||
+          (product.description && product.description.toLowerCase().includes(query.toLowerCase()))
+        )
+        .slice(0, 5); // Limit to 5 suggestions
+
+      setSearchSuggestions(suggestions);
+      setShowSuggestions(true);
+    } else {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
+      setShowSuggestions(false);
     }
   };
+
+  const handleSuggestionClick = (product) => {
+    navigate(`/products/${product.slug}`);
+    setSearchQuery('');
+    setShowSuggestions(false);
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -105,15 +165,41 @@ const Navbar = () => {
 
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="hidden md:flex items-center">
-            <div className="relative">
+            <div className="relative" ref={searchRef}>
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleSearchChange}
                 placeholder="Search products..."
                 className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted" />
+
+              {/* Search Suggestions */}
+              {showSuggestions && searchSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-50">
+                  {searchSuggestions.map((product) => (
+                    <button
+                      key={product.id}
+                      type="button"
+                      onClick={() => handleSuggestionClick(product)}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-3 border-b border-gray-100 last:border-b-0"
+                    >
+                      {product.images && product.images[0] && (
+                        <img
+                          src={product.images[0]}
+                          alt={product.name}
+                          className="w-10 h-10 object-cover rounded"
+                        />
+                      )}
+                      <div>
+                        <div className="font-medium text-gray-900">{product.name}</div>
+                        <div className="text-sm text-gray-500">NPR {product.price}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </form>
 
@@ -222,11 +308,40 @@ const Navbar = () => {
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchChange}
                   placeholder="Search products..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
                 <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted" />
+
+                {/* Mobile Search Suggestions */}
+                {showSuggestions && searchSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-50">
+                    {searchSuggestions.map((product) => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => {
+                          handleSuggestionClick(product);
+                          setIsMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-3 border-b border-gray-100 last:border-b-0"
+                      >
+                        {product.images && product.images[0] && (
+                          <img
+                            src={product.images[0]}
+                            alt={product.name}
+                            className="w-10 h-10 object-cover rounded"
+                          />
+                        )}
+                        <div>
+                          <div className="font-medium text-gray-900">{product.name}</div>
+                          <div className="text-sm text-gray-500">NPR {product.price}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </form>
 

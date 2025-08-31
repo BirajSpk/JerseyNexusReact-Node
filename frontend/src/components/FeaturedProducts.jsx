@@ -1,85 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowRight, ShoppingBag } from 'lucide-react';
+import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
+import { ArrowRight, ShoppingBag, Loader } from './ui/ProfessionalIcon';
 import ProductCard from './ProductCard';
+import { productAPI } from '../utils/api';
+import toast from 'react-hot-toast';
 
 const FeaturedProducts = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock featured products - In real app, this would come from API
-  const mockFeaturedProducts = [
-    {
-      id: 1,
-      name: 'Manchester United Home Jersey 2024',
-      slug: 'manchester-united-home-jersey-2024',
-      price: 2500,
-      originalPrice: 3000,
-      category: 'football-jerseys',
-      brand: 'Adidas',
-      images: [{ url: 'https://via.placeholder.com/400x400?text=Man+Utd+Jersey' }],
-      rating: 4.5,
-      reviewCount: 128,
-      stock: 15,
-      isNew: true,
-      description: 'Official Manchester United home jersey for 2024 season'
-    },
-    {
-      id: 2,
-      name: 'Real Madrid Away Jersey 2024',
-      slug: 'real-madrid-away-jersey-2024',
-      price: 2700,
-      originalPrice: 3200,
-      category: 'football-jerseys',
-      brand: 'Adidas',
-      images: [{ url: 'https://via.placeholder.com/400x400?text=Real+Madrid+Jersey' }],
-      rating: 4.8,
-      reviewCount: 95,
-      stock: 8,
-      isNew: false,
-      description: 'Official Real Madrid away jersey for 2024 season'
-    },
-    {
-      id: 3,
-      name: 'Lakers LeBron James Jersey',
-      slug: 'lakers-lebron-james-jersey',
-      price: 3200,
-      originalPrice: 3800,
-      category: 'basketball-jerseys',
-      brand: 'Nike',
-      images: [{ url: 'https://via.placeholder.com/400x400?text=Lakers+Jersey' }],
-      rating: 4.7,
-      reviewCount: 76,
-      stock: 12,
-      isNew: true,
-      description: 'Official Lakers LeBron James basketball jersey'
-    },
-    {
-      id: 4,
-      name: 'India Cricket Team Jersey 2024',
-      slug: 'india-cricket-team-jersey-2024',
-      price: 1800,
-      originalPrice: 2200,
-      category: 'cricket-jerseys',
-      brand: 'Nike',
-      images: [{ url: 'https://via.placeholder.com/400x400?text=India+Cricket+Jersey' }],
-      rating: 4.6,
-      reviewCount: 143,
-      stock: 25,
-      isNew: false,
-      description: 'Official India cricket team jersey for 2024'
-    }
-  ];
-
+  // Fetch featured products from API
   useEffect(() => {
-    // Simulate API call
-    setLoading(true);
-    setTimeout(() => {
-      setFeaturedProducts(mockFeaturedProducts);
-      setLoading(false);
-    }, 800);
+    const fetchFeaturedProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await productAPI.getFeaturedProducts();
+
+        if (response.data.success) {
+          const products = response.data.data.products || [];
+
+          // Process products to ensure proper image handling
+          const processedProducts = products.map(product => ({
+            ...product,
+            images: product.images ? (
+              typeof product.images === 'string'
+                ? [{ url: product.images }]
+                : Array.isArray(product.images)
+                  ? product.images
+                  : [{ url: product.images.url || product.images }]
+            ) : [{ url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSIyMDAiIHk9IjIxMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Qcm9kdWN0PC90ZXh0Pjwvc3ZnPg==' }],
+            price: product.salePrice || product.price,
+            originalPrice: product.price,
+            rating: product.rating || 4.5,
+            reviewCount: product.reviewCount || 0,
+            stock: product.stock || 0,
+            featured: true
+          }));
+
+          setFeaturedProducts(processedProducts.slice(0, 8)); // Limit to 8 products
+        } else {
+          throw new Error('Failed to fetch featured products');
+        }
+      } catch (error) {
+        console.error('Error fetching featured products:', error);
+        setError('Failed to load featured products');
+
+        // Show error message instead of fallback data
+        toast.error('Failed to load featured products');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedProducts();
   }, []);
+
+
 
   if (loading) {
     return (
@@ -104,6 +84,27 @@ const FeaturedProducts = () => {
                 <div className="h-6 bg-gray-300 rounded w-1/3"></div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error && featuredProducts.length === 0) {
+    return (
+      <section className="py-16 bg-white">
+        <div className="container">
+          <div className="text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-dark mb-4">
+              Featured Products
+            </h2>
+            <p className="text-xl text-red-600 mb-8">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="btn btn-primary"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       </section>

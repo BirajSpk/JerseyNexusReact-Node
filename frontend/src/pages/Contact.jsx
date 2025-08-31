@@ -1,6 +1,6 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Phone, Mail, MapPin, Clock, Send } from 'lucide-react';
+import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
+import { Phone, Mail, MapPin, Clock, Send } from '../components/ui/ProfessionalIcon';
 
 const Contact = () => {
   return (

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Home, ArrowLeft } from 'lucide-react';
+import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
+import { Home, ArrowLeft } from '../components/ui/ProfessionalIcon';
 
 const NotFound = () => {
   return (

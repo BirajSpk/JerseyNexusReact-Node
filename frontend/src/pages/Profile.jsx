@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useForm } from '../utils/forms'; // Temporary form wrapper
+import { motion, AnimatePresence } from '../utils/motion.jsx'; // Temporary motion wrapper
 import {
   User,
   Mail,
@@ -16,11 +16,16 @@ import {
   Shield,
   Package,
   Heart,
-  LogOut
-} from 'lucide-react';
+  LogOut,
+  ShoppingCart,
+  Trash2,
+  Star
+} from '../components/ui/ProfessionalIcon';
 import toast from 'react-hot-toast';
 import { userAPI, uploadAPI, orderAPI, paymentAPI } from '../utils/api';
 import { updateProfile, logout } from '../store/slices/authSlice';
+import { removeFromWishlist, clearWishlist } from '../store/slices/wishlistSlice';
+import { addToCart } from '../store/slices/cartSlice';
 import ImageCropper from '../components/ImageCropper';
 import WebSocketService from '../services/websocket';
 
@@ -28,6 +33,7 @@ const Profile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector(state => state.auth);
+  const wishlistItems = useSelector(state => state.wishlist.items);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showCropper, setShowCropper] = useState(false);
@@ -210,6 +216,36 @@ const Profile = () => {
   const handleLogout = () => {
     dispatch(logout());
     toast.success('Logged out successfully');
+  };
+
+  // Wishlist handlers
+  const handleRemoveFromWishlist = (productId) => {
+    dispatch(removeFromWishlist(productId));
+  };
+
+  const handleMoveToCart = (product) => {
+    dispatch(addToCart({ product, quantity: 1 }));
+    dispatch(removeFromWishlist(product.id));
+    toast.success(`${product.name} moved to cart!`);
+  };
+
+  const handleClearWishlist = () => {
+    if (wishlistItems.length > 0) {
+      dispatch(clearWishlist());
+    }
+  };
+
+  const renderStars = (rating) => {
+    return [...Array(5)].map((_, i) => (
+      <Star
+        key={i}
+        className={`h-4 w-4 ${
+          i < Math.floor(rating)
+            ? 'text-yellow-400 fill-current'
+            : 'text-gray-300'
+        }`}
+      />
+    ));
   };
 
   const tabs = [
@@ -699,11 +735,109 @@ const Profile = () => {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Wishlist</h2>
-                  <div className="text-center py-12">
-                    <Heart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                    <p className="text-gray-600">Wishlist functionality will be implemented here</p>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Wishlist ({wishlistItems.length})
+                    </h2>
+                    {wishlistItems.length > 0 && (
+                      <button
+                        onClick={handleClearWishlist}
+                        className="text-red-600 hover:text-red-700 text-sm font-medium"
+                      >
+                        Clear All
+                      </button>
+                    )}
                   </div>
+
+                  {wishlistItems.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Heart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600 mb-2">Your wishlist is empty</p>
+                      <p className="text-gray-500 text-sm">Add products you love to see them here</p>
+                      <button
+                        onClick={() => navigate('/products')}
+                        className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Browse Products
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {wishlistItems.map((item) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                        >
+                          <div className="relative">
+                            <img
+                              src={item.images || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNzUgMTUwSDIyNVYyNTBIMTc1VjE1MFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K'}
+                              alt={item.name}
+                              className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => navigate(`/products/${item.slug}`)}
+                            />
+                            <button
+                              onClick={() => handleRemoveFromWishlist(item.id)}
+                              className="absolute top-2 right-2 bg-white p-2 rounded-full shadow-md hover:bg-gray-50 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </button>
+                          </div>
+
+                          <div className="p-4">
+                            <h3
+                              className="font-semibold text-gray-900 mb-2 cursor-pointer hover:text-blue-600 transition-colors"
+                              onClick={() => navigate(`/products/${item.slug}`)}
+                            >
+                              {item.name}
+                            </h3>
+
+                            <div className="flex items-center mb-2">
+                              <div className="flex items-center">
+                                {renderStars(item.rating || 0)}
+                              </div>
+                              <span className="text-sm text-gray-500 ml-2">
+                                ({item.reviewCount || 0})
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-lg font-bold text-gray-900">
+                                  NPR {item.price?.toLocaleString()}
+                                </span>
+                                {item.originalPrice && item.originalPrice > item.price && (
+                                  <span className="text-sm text-gray-500 line-through">
+                                    NPR {item.originalPrice.toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                item.stock > 0
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {item.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                              </span>
+                            </div>
+
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleMoveToCart(item)}
+                                disabled={item.stock === 0}
+                                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                              >
+                                <ShoppingCart className="h-4 w-4" />
+                                <span>Add to Cart</span>
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               )}
 

@@ -1,11 +1,12 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { motion } from './utils/motion.jsx'; // Temporary motion wrapper
 
 // Layout Components
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import AppInitializer from './components/AppInitializer';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Pages
 import Home from './pages/Home';
@@ -18,6 +19,7 @@ import OrderSuccess from './pages/OrderSuccess';
 import ProductDebug from './pages/ProductDebug';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import ForgotPassword from './pages/auth/ForgotPassword';
 import Profile from './pages/Profile';
 import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
@@ -26,12 +28,18 @@ import BlogDetail from './pages/BlogDetail';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import OrderTracking from './pages/OrderTracking';
 
 function App() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
   return (
     <AppInitializer>
-      <div className="min-h-screen bg-neutral flex flex-col">
-        <Navbar />
+      <ErrorBoundary>
+        <div className="min-h-screen bg-neutral flex flex-col">
+        {!isAdminRoute && <Navbar />}
 
         <motion.main
           className="flex-1"
@@ -50,6 +58,7 @@ function App() {
             <Route path="/order-success" element={<OrderSuccess />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/orders/:id" element={<OrderDetail />} />
@@ -57,12 +66,15 @@ function App() {
             <Route path="/blogs/:slug" element={<BlogDetail />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/orders/:orderId" element={<OrderTracking />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </motion.main>
 
-        <Footer />
-      </div>
+        {!isAdminRoute && <Footer />}
+        </div>
+      </ErrorBoundary>
     </AppInitializer>
   );
 }

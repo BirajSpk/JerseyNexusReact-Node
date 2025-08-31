@@ -158,9 +158,41 @@ const getOrder = asyncHandler(async (req, res) => {
   sendResponse(res, 200, true, 'Order retrieved successfully', { order });
 });
 
+// @desc    Delete order
+// @route   DELETE /api/orders/:id
+// @access  Private/Admin
+const deleteOrder = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Check if order exists
+  const existingOrder = await prisma.order.findUnique({
+    where: { id }
+  });
+
+  if (!existingOrder) {
+    return res.status(404).json({
+      success: false,
+      error: 'Order not found'
+    });
+  }
+
+  // Delete order items first (due to foreign key constraints)
+  await prisma.orderItem.deleteMany({
+    where: { orderId: id }
+  });
+
+  // Delete the order
+  await prisma.order.delete({
+    where: { id }
+  });
+
+  sendResponse(res, 200, true, 'Order deleted successfully');
+});
+
 module.exports = {
   getOrders,
   getOrder,
   createOrder,
   updateOrderStatus,
+  deleteOrder,
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
 import {
   ArrowLeft,
   Package,
@@ -12,7 +12,7 @@ import {
   Mail,
   Calendar,
   CreditCard
-} from 'lucide-react';
+} from '../components/ui/ProfessionalIcon';
 import toast from 'react-hot-toast';
 import { orderAPI, paymentAPI } from '../utils/api';
 

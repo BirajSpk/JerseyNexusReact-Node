@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Loader, CheckCircle, XCircle } from 'lucide-react';
+import { CreditCard, Loader, CheckCircle, XCircle } from '../components/ui/SimpleIcon';
 import { paymentAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 
