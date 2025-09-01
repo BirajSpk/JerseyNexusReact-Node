@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  CreditCard, 
-  Truck, 
-  CheckCircle, 
+import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
+import {
+  CreditCard,
+  Truck,
+  CheckCircle,
   ArrowLeft,
   Clock,
   Shield,
   Banknote
-} from 'lucide-react';
+} from '../components/ui/ProfessionalIcon';
 import toast from 'react-hot-toast';
 import { paymentAPI } from '../utils/api';
 
@@ -21,17 +21,17 @@ const PaymentSelection = () => {
   const [selectedPayment, setSelectedPayment] = useState('');
   
   // Get order data from location state
-  const { order, paymentMethod, totalAmount } = location.state || {};
-  
+  const { order, totalAmount } = location.state || {};
+
   useEffect(() => {
     if (!order) {
       navigate('/cart');
       return;
     }
-    
+
     // Set default payment method
-    setSelectedPayment(paymentMethod || 'cod');
-  }, [order, paymentMethod, navigate]);
+    setSelectedPayment('cod');
+  }, [order, navigate]);
 
   const handlePaymentSelection = async () => {
     if (!selectedPayment) {
@@ -68,6 +68,33 @@ const PaymentSelection = () => {
           }, 1500);
         } else {
           throw new Error('Failed to initiate Khalti payment');
+        }
+      } else if (selectedPayment === 'esewa') {
+        // Initiate eSewa payment
+        const response = await paymentAPI.initiateEsewa({
+          orderId: order.id,
+          amount: totalAmount,
+          productName: `Order #${order.id.slice(-8)}`
+        });
+
+        if (response.data.success) {
+          const { payment_url } = response.data.data;
+
+          // Show notification before redirect
+          toast.success('🚀 Redirecting to eSewa Payment...', {
+            duration: 2000,
+            style: {
+              background: '#10B981',
+              color: '#fff',
+            },
+          });
+
+          // Redirect to eSewa payment page after a short delay
+          setTimeout(() => {
+            window.location.href = payment_url;
+          }, 1500);
+        } else {
+          throw new Error('Failed to initiate eSewa payment');
         }
       } else if (selectedPayment === 'cod') {
         // Process Cash on Delivery
@@ -213,6 +240,42 @@ const PaymentSelection = () => {
                       <div>
                         <span className="font-medium text-lg">Khalti Digital Wallet</span>
                         <p className="text-sm text-muted">Pay instantly with Khalti</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 ml-9 text-sm text-muted">
+                    <div className="flex items-center space-x-2">
+                      <Shield className="h-4 w-4 text-green-500" />
+                      <span>Secure & instant payment</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* eSewa Payment */}
+                <div
+                  className={`border-2 rounded-lg p-4 cursor-pointer transition-colors ${
+                    selectedPayment === 'esewa'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setSelectedPayment('esewa')}
+                >
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      checked={selectedPayment === 'esewa'}
+                      onChange={() => setSelectedPayment('esewa')}
+                      className="text-primary"
+                    />
+                    <div className="flex items-center space-x-3">
+                      <img
+                        src="https://esewa.com.np/common/images/esewa-logo.png"
+                        alt="eSewa"
+                        className="h-8 w-auto bg-green-600 px-3 py-2 rounded"
+                      />
+                      <div>
+                        <span className="font-medium text-lg">eSewa Digital Wallet</span>
+                        <p className="text-sm text-muted">Pay instantly with eSewa</p>
                       </div>
                     </div>
                   </div>

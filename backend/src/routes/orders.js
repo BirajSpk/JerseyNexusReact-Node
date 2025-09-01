@@ -4,6 +4,7 @@ const {
   getOrder,
   createOrder,
   updateOrderStatus,
+  deleteOrder,
 } = require('../controllers/orderController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -19,5 +20,6 @@ router.post('/', createOrder);
 
 // Admin routes
 router.put('/:id', authorize('ADMIN'), updateOrderStatus);
+router.delete('/:id', authorize('ADMIN'), deleteOrder);
 
 module.exports = router;

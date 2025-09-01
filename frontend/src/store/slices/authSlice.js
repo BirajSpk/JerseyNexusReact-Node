@@ -1,5 +1,12 @@
-import { createSlice } from '@reduxjs/toolkit';
 import WebSocketService from '../../services/websocket';
+
+// Action types
+export const AUTH_SET_LOADING = 'auth/setLoading';
+export const AUTH_SET_ERROR = 'auth/setError';
+export const AUTH_LOGIN_SUCCESS = 'auth/loginSuccess';
+export const AUTH_LOGOUT = 'auth/logout';
+export const AUTH_UPDATE_PROFILE = 'auth/updateProfile';
+export const AUTH_CLEAR_ERROR = 'auth/clearError';
 
 // Helper function to safely get data from localStorage
 const getStoredUser = () => {
@@ -27,63 +34,65 @@ const initialState = {
   error: null,
 };
 
-const authSlice = createSlice({
-  name: 'auth',
-  initialState,
-  reducers: {
-    setLoading: (state, action) => {
-      state.loading = action.payload;
-    },
-    setError: (state, action) => {
-      state.error = action.payload;
-      state.loading = false;
-    },
-    loginSuccess: (state, action) => {
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      state.isAuthenticated = true;
-      state.loading = false;
-      state.error = null;
+// Action creators
+export const setLoading = (loading) => ({ type: AUTH_SET_LOADING, payload: loading });
+export const setError = (error) => ({ type: AUTH_SET_ERROR, payload: error });
+export const loginSuccess = (data) => ({ type: AUTH_LOGIN_SUCCESS, payload: data });
+export const logout = () => ({ type: AUTH_LOGOUT });
+export const updateProfile = (data) => ({ type: AUTH_UPDATE_PROFILE, payload: data });
+export const clearError = () => ({ type: AUTH_CLEAR_ERROR });
 
+// Reducer
+const authReducer = (state = initialState, action) => {
+  switch (action.type) {
+    case AUTH_SET_LOADING:
+      return { ...state, loading: action.payload };
+
+    case AUTH_SET_ERROR:
+      return { ...state, error: action.payload, loading: false };
+
+    case AUTH_LOGIN_SUCCESS:
       // Store both token and user data in localStorage
       localStorage.setItem('token', action.payload.token);
       localStorage.setItem('user', JSON.stringify(action.payload.user));
-
       // Connect to WebSocket
       WebSocketService.connect(action.payload.token);
-    },
-    logout: (state) => {
-      state.user = null;
-      state.token = null;
-      state.isAuthenticated = false;
-      state.loading = false;
-      state.error = null;
+      return {
+        ...state,
+        user: action.payload.user,
+        token: action.payload.token,
+        isAuthenticated: true,
+        loading: false,
+        error: null,
+      };
 
+    case AUTH_LOGOUT:
       // Remove both token and user data from localStorage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-
       // Disconnect from WebSocket
       WebSocketService.disconnect();
-    },
-    updateProfile: (state, action) => {
-      state.user = { ...state.user, ...action.payload };
+      return {
+        ...state,
+        user: null,
+        token: null,
+        isAuthenticated: false,
+        loading: false,
+        error: null,
+      };
+
+    case AUTH_UPDATE_PROFILE:
+      const updatedUser = { ...state.user, ...action.payload };
       // Update user data in localStorage
-      localStorage.setItem('user', JSON.stringify(state.user));
-    },
-    clearError: (state) => {
-      state.error = null;
-    },
-  },
-});
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return { ...state, user: updatedUser };
 
-export const {
-  setLoading,
-  setError,
-  loginSuccess,
-  logout,
-  updateProfile,
-  clearError,
-} = authSlice.actions;
+    case AUTH_CLEAR_ERROR:
+      return { ...state, error: null };
 
-export default authSlice.reducer;
+    default:
+      return state;
+  }
+};
+
+export default authReducer;

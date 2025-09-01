@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
 import {
-  Search,
   Filter,
   Grid,
   List,
   ChevronDown,
-  X
-} from 'lucide-react';
+  X,
+  Star
+} from '../components/ui/ProfessionalIcon';
 import ProductCard from '../components/ProductCard';
 import toast from 'react-hot-toast';
 import { productAPI, categoryAPI } from '../utils/api';
@@ -22,8 +22,8 @@ const Products = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('grid');
-  const [showFilters, setShowFilters] = useState(true);
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [showFilters, setShowFilters] = useState(false); // Hidden by default on mobile
+
   const [sortBy, setSortBy] = useState('name');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [priceRange, setPriceRange] = useState([0, 10000]);
@@ -47,7 +47,6 @@ const Products = () => {
           productAPI.getProducts({
             page: 1,
             limit: 50,
-            search: searchQuery,
             category: selectedCategory
           }),
           categoryAPI.getProductCategories()
@@ -73,19 +72,11 @@ const Products = () => {
     };
 
     fetchData();
-  }, [searchQuery, selectedCategory]);
+  }, [selectedCategory]);
 
-  // Filter and search products
+  // Filter products
   const filteredProducts = useMemo(() => {
     let filtered = [...products];
-
-    // Search filter (already handled by API, but keep for client-side refinement)
-    if (searchQuery) {
-      filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-    }
 
     // Category filter (already handled by API, but keep for client-side refinement)
     if (selectedCategory) {
@@ -125,18 +116,9 @@ const Products = () => {
     });
 
     return filtered;
-  }, [products, searchQuery, selectedCategory, selectedBrands, priceRange, sortBy]);
+  }, [products, selectedCategory, selectedBrands, priceRange, sortBy]);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    const params = new URLSearchParams(searchParams);
-    if (searchQuery) {
-      params.set('search', searchQuery);
-    } else {
-      params.delete('search');
-    }
-    setSearchParams(params);
-  };
+
 
   const handleCategoryChange = (categoryId) => {
     setSelectedCategory(categoryId);
@@ -161,7 +143,6 @@ const Products = () => {
     setSelectedCategory('');
     setSelectedBrands([]);
     setPriceRange([0, 10000]);
-    setSearchQuery('');
     setSearchParams({});
   };
 
@@ -196,28 +177,13 @@ const Products = () => {
         </p>
       </motion.div>
 
-      {/* Search & Controls */}
+      {/* Controls */}
       <div className="flex flex-col lg:flex-row gap-4 mb-8">
-        {/* Search */}
-        <form onSubmit={handleSearch} className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted h-5 w-5" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search products, brands, or teams..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
-        </form>
-        
-        {/* Controls */}
-        <div className="flex items-center space-x-4">
-          {/* Filter Toggle */}
+        <div className="flex items-center space-x-4 ml-auto">
+          {/* Filter Toggle - Only visible on mobile */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="btn btn-outline px-4 py-3 flex items-center space-x-2"
+            className="btn btn-outline px-4 py-3 flex items-center space-x-2 lg:hidden"
           >
             <Filter className="h-5 w-5" />
             <span>Filters</span>
@@ -261,8 +227,8 @@ const Products = () => {
         {/* Filters Sidebar */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: showFilters ? 1 : 0, x: showFilters ? 0 : -20 }}
-          className={`lg:w-64 bg-white rounded-lg shadow-soft p-6 ${showFilters ? 'block' : 'hidden lg:block'}`}
+          animate={{ opacity: 1, x: 0 }}
+          className={`lg:w-64 bg-white rounded-lg shadow-soft p-6 ${showFilters ? 'block' : 'hidden'} lg:block`}
         >
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-semibold text-dark">Filters</h3>
@@ -340,6 +306,59 @@ const Products = () => {
               </div>
             </div>
           </div>
+
+          {/* Shopping Tips Section */}
+          <div className="mt-8 p-4 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg">
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <Star className="w-5 h-5 text-primary mr-2" />
+              Shopping Tips
+            </h4>
+            <div className="space-y-2 text-sm text-gray-600">
+              <p className="flex items-start">
+                <span className="w-2 h-2 bg-primary rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                Check size charts before ordering
+              </p>
+              <p className="flex items-start">
+                <span className="w-2 h-2 bg-primary rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                Free shipping on orders over Rs. 5000
+              </p>
+              <p className="flex items-start">
+                <span className="w-2 h-2 bg-primary rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                30-day return policy available
+              </p>
+              <p className="flex items-start">
+                <span className="w-2 h-2 bg-primary rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                Authentic jerseys guaranteed
+              </p>
+            </div>
+          </div>
+
+          {/* Popular Categories */}
+          <div className="mt-6 p-4 bg-white border border-gray-200 rounded-lg">
+            <h4 className="font-semibold text-gray-900 mb-3">Popular Categories</h4>
+            <div className="space-y-2">
+              {categories.slice(0, 5).map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => handleCategoryChange(category.id)}
+                  className="block w-full text-left text-sm text-gray-600 hover:text-primary transition-colors py-1"
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Customer Support */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg text-center">
+            <h4 className="font-semibold text-gray-900 mb-2">Need Help?</h4>
+            <p className="text-sm text-gray-600 mb-3">
+              Can't find what you're looking for?
+            </p>
+            <button className="text-primary hover:text-primary/80 text-sm font-medium transition-colors">
+              Contact Support
+            </button>
+          </div>
         </motion.div>
 
         {/* Products Grid */}
@@ -349,7 +368,7 @@ const Products = () => {
             <p className="text-muted">
               Showing {filteredProducts.length} of {products.length} products
             </p>
-            {(selectedCategory || selectedBrands.length > 0 || searchQuery) && (
+            {(selectedCategory || selectedBrands.length > 0) && (
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted">Active filters:</span>
                 {selectedCategory && (
@@ -368,14 +387,7 @@ const Products = () => {
                     </button>
                   </span>
                 ))}
-                {searchQuery && (
-                  <span className="bg-primary/10 text-primary px-2 py-1 rounded text-xs flex items-center space-x-1">
-                    <span>"{searchQuery}"</span>
-                    <button onClick={() => setSearchQuery('')}>
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                )}
+
               </div>
             )}
           </div>

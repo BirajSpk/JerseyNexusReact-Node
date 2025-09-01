@@ -9,7 +9,8 @@ const WebSocketService = require('./utils/websocket');
 const DatabaseChecker = require('./utils/dbCheck');
 require('dotenv').config();
 const prisma = require("../src/config/database.js") 
-const seedDummyData = require('./utils/dummyData');
+const {seedDummyData} = require('../prisma/dummydata.js');
+
 prisma.$connect();
 
 const authRoutes = require('./routes/auth');
@@ -38,15 +39,20 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000, // 15 minutes
-  max: process.env.RATE_LIMIT_MAX || 100, // limit each IP to 100 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later.'
-  }
-});
-app.use('/api/', limiter);
+// Rate limiting - disabled for development, enabled for production
+if (process.env.NODE_ENV === 'production') {
+  const limiter = rateLimit({
+    windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000, // 15 minutes
+    max: process.env.RATE_LIMIT_MAX || 100, // 100 for production
+    message: {
+      error: 'Too many requests from this IP, please try again later.'
+    }
+  });
+  app.use('/api/', limiter);
+  console.log('🛡️ Rate limiting enabled for production');
+} else {
+  console.log('🚀 Rate limiting disabled for development');
+}
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -134,7 +140,7 @@ app.get('/', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Database startup check
 async function startServer() {
@@ -167,6 +173,8 @@ async function startServer() {
 }
 
 
+//seeding the dummy data
+// seedDummyData();
 
 // Start the server
 startServer().catch(error => {

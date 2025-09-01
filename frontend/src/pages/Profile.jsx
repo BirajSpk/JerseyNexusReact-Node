@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useForm } from '../utils/forms'; // Temporary form wrapper
+import { motion, AnimatePresence } from '../utils/motion.jsx'; // Temporary motion wrapper
 import {
   User,
   Mail,
@@ -16,22 +16,32 @@ import {
   Shield,
   Package,
   Heart,
-  LogOut
-} from 'lucide-react';
+  LogOut,
+  ShoppingCart,
+  Trash2,
+  Star
+} from '../components/ui/ProfessionalIcon';
 import toast from 'react-hot-toast';
 import { userAPI, uploadAPI, orderAPI, paymentAPI } from '../utils/api';
 import { updateProfile, logout } from '../store/slices/authSlice';
+import { removeFromWishlist, clearWishlist } from '../store/slices/wishlistSlice';
+import { addToCart } from '../store/slices/cartSlice';
 import ImageCropper from '../components/ImageCropper';
 import WebSocketService from '../services/websocket';
 
 const Profile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, isAuthenticated } = useSelector(state => state.auth);
+  const wishlistItems = useSelector(state => state.wishlist.items);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showCropper, setShowCropper] = useState(false);
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = searchParams.get('tab');
+    return tab && ['profile', 'orders', 'wishlist'].includes(tab) ? tab : 'profile';
+  });
   const [profileData, setProfileData] = useState(null);
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -170,6 +180,28 @@ const Profile = () => {
     }
   };
 
+  const handlePasswordUpdate = async ({ currentPassword, newPassword }) => {
+    try {
+      // Call password update API
+      const response = await userAPI.changePassword({
+        currentPassword,
+        newPassword
+      });
+
+      if (response.data.success) {
+        toast.success('Password updated successfully!');
+        // Reset form
+        const form = document.querySelector('form[data-password-form]');
+        if (form) form.reset();
+      } else {
+        toast.error(response.data.message || 'Failed to update password');
+      }
+    } catch (error) {
+      console.error('Password update error:', error);
+      toast.error(error.response?.data?.message || 'Failed to update password. Please try again.');
+    }
+  };
+
   const handleImageCropped = async (croppedFile) => {
     try {
       const formData = new FormData();
@@ -210,6 +242,36 @@ const Profile = () => {
   const handleLogout = () => {
     dispatch(logout());
     toast.success('Logged out successfully');
+  };
+
+  // Wishlist handlers
+  const handleRemoveFromWishlist = (productId) => {
+    dispatch(removeFromWishlist(productId));
+  };
+
+  const handleMoveToCart = (product) => {
+    dispatch(addToCart({ product, quantity: 1 }));
+    dispatch(removeFromWishlist(product.id));
+    toast.success(`${product.name} moved to cart!`);
+  };
+
+  const handleClearWishlist = () => {
+    if (wishlistItems.length > 0) {
+      dispatch(clearWishlist());
+    }
+  };
+
+  const renderStars = (rating) => {
+    return [...Array(5)].map((_, i) => (
+      <Star
+        key={i}
+        className={`h-4 w-4 ${
+          i < Math.floor(rating)
+            ? 'text-yellow-400 fill-current'
+            : 'text-gray-300'
+        }`}
+      />
+    ));
   };
 
   const tabs = [
@@ -699,11 +761,109 @@ const Profile = () => {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Wishlist</h2>
-                  <div className="text-center py-12">
-                    <Heart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                    <p className="text-gray-600">Wishlist functionality will be implemented here</p>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Wishlist ({wishlistItems.length})
+                    </h2>
+                    {wishlistItems.length > 0 && (
+                      <button
+                        onClick={handleClearWishlist}
+                        className="text-red-600 hover:text-red-700 text-sm font-medium"
+                      >
+                        Clear All
+                      </button>
+                    )}
                   </div>
+
+                  {wishlistItems.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Heart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600 mb-2">Your wishlist is empty</p>
+                      <p className="text-gray-500 text-sm">Add products you love to see them here</p>
+                      <button
+                        onClick={() => navigate('/products')}
+                        className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Browse Products
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {wishlistItems.map((item) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                        >
+                          <div className="relative">
+                            <img
+                              src={item.images || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNzUgMTUwSDIyNVYyNTBIMTc1VjE1MFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHN2Zz4K'}
+                              alt={item.name}
+                              className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => navigate(`/products/${item.slug}`)}
+                            />
+                            <button
+                              onClick={() => handleRemoveFromWishlist(item.id)}
+                              className="absolute top-2 right-2 bg-white p-2 rounded-full shadow-md hover:bg-gray-50 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </button>
+                          </div>
+
+                          <div className="p-4">
+                            <h3
+                              className="font-semibold text-gray-900 mb-2 cursor-pointer hover:text-blue-600 transition-colors"
+                              onClick={() => navigate(`/products/${item.slug}`)}
+                            >
+                              {item.name}
+                            </h3>
+
+                            <div className="flex items-center mb-2">
+                              <div className="flex items-center">
+                                {renderStars(item.rating || 0)}
+                              </div>
+                              <span className="text-sm text-gray-500 ml-2">
+                                ({item.reviewCount || 0})
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-lg font-bold text-gray-900">
+                                  NPR {item.price?.toLocaleString()}
+                                </span>
+                                {item.originalPrice && item.originalPrice > item.price && (
+                                  <span className="text-sm text-gray-500 line-through">
+                                    NPR {item.originalPrice.toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                item.stock > 0
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {item.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                              </span>
+                            </div>
+
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleMoveToCart(item)}
+                                disabled={item.stock === 0}
+                                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                              >
+                                <ShoppingCart className="h-4 w-4" />
+                                <span>Add to Cart</span>
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -716,9 +876,95 @@ const Profile = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">Security Settings</h2>
-                  <div className="text-center py-12">
-                    <Shield className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                    <p className="text-gray-600">Security settings will be implemented here</p>
+
+                  {/* Change Password Form */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                      <Shield className="w-5 h-5 mr-2 text-blue-600" />
+                      Change Password
+                    </h3>
+
+                    <form className="space-y-4" data-password-form onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.target);
+                      const currentPassword = formData.get('currentPassword');
+                      const newPassword = formData.get('newPassword');
+                      const confirmPassword = formData.get('confirmPassword');
+
+                      if (newPassword !== confirmPassword) {
+                        toast.error('New passwords do not match');
+                        return;
+                      }
+
+                      if (newPassword.length < 6) {
+                        toast.error('Password must be at least 6 characters long');
+                        return;
+                      }
+
+                      // Handle password update
+                      handlePasswordUpdate({ currentPassword, newPassword });
+                    }}>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Current Password
+                        </label>
+                        <input
+                          type="password"
+                          name="currentPassword"
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter your current password"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          New Password
+                        </label>
+                        <input
+                          type="password"
+                          name="newPassword"
+                          required
+                          minLength="6"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter your new password"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Confirm New Password
+                        </label>
+                        <input
+                          type="password"
+                          name="confirmPassword"
+                          required
+                          minLength="6"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Confirm your new password"
+                        />
+                      </div>
+
+                      <div className="flex justify-end">
+                        <button
+                          type="submit"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                        >
+                          Update Password
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Account Security Info */}
+                  <div className="mt-6 bg-blue-50 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-blue-900 mb-2">Security Tips</h4>
+                    <ul className="text-sm text-blue-800 space-y-1">
+                      <li>• Use a strong password with at least 8 characters</li>
+                      <li>• Include uppercase, lowercase, numbers, and special characters</li>
+                      <li>• Don't reuse passwords from other accounts</li>
+                      <li>• Change your password regularly</li>
+                    </ul>
                   </div>
                 </motion.div>
               )}

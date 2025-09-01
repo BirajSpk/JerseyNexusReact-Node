@@ -21,7 +21,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight
-} from 'lucide-react';
+} from './ui/ProfessionalIcon';
 import { uploadAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { CheckCircle, Package, Truck, Home, ArrowRight } from 'lucide-react';
+import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
+import { CheckCircle, Package, Truck, Home, ArrowRight } from '../components/ui/SimpleIcon';
 
 const OrderSuccess = () => {
   const location = useLocation();

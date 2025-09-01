@@ -1,18 +1,23 @@
 import { configureStore } from '@reduxjs/toolkit';
-import authSlice from './slices/authSlice';
-import cartSlice from './slices/cartSlice';
-import productSlice from './slices/productSlice';
+import authReducer from './slices/authSlice';
+import cartReducer from './slices/cartSlice';
+import productReducer from './slices/productSlice';
+import wishlistReducer from './slices/wishlistSlice';
 
 export const store = configureStore({
   reducer: {
-    auth: authSlice,
-    cart: cartSlice,
-    products: productSlice,
+    auth: authReducer,
+    cart: cartReducer,
+    products: productReducer,
+    wishlist: wishlistReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST'],
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
     }),
+  devTools: process.env.NODE_ENV !== 'production',
 });
+
+export default store;

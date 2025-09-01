@@ -103,9 +103,9 @@ model Order {
   shippingCost Float      @default(0)
   discountAmount Float    @default(0)
   status      String      @default("PENDING") // PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
-  paymentMethod String    @default("COD") // COD, KHALTI
-  paymentStatus String    @default("PENDING") // PENDING, PAID, FAILED, REFUNDED
-  paymentId   String?     // Khalti payment ID
+  paymentMethod String    @default("COD") // COD, KHALTI, ESEWA
+  paymentStatus String    @default("PENDING") // PENDING, PAID, FAILED, REFUNDED, CANCELLED
+  paymentId   String?     // External payment ID (Khalti/eSewa)
   trackingNumber String?
   
   // Shipping info as JSON string
@@ -119,8 +119,9 @@ model Order {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items OrderItem[]
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items    OrderItem[]
+  payments Payment[]   // Payment attempts for this order
 
   @@map("orders")
 }
@@ -142,6 +143,40 @@ model OrderItem {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("order_items")
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  orderId         String
+  amount          Float    // Payment amount
+  currency        String   @default("NPR")
+  method          String   // KHALTI, ESEWA, COD
+  status          String   @default("PENDING") // PENDING, SUCCESS, FAILED, CANCELLED, REFUNDED
+
+  // External payment gateway details
+  externalId      String?  // Payment ID from Khalti/eSewa
+  gatewayResponse Json?    // Full response from payment gateway
+
+  // Transaction details
+  transactionId   String?  // Internal transaction ID
+  referenceId     String?  // Reference ID for tracking
+
+  // Payment metadata
+  metadata        Json?    // Additional payment information
+  failureReason   String?  // Reason for payment failure
+
+  // Timestamps
+  initiatedAt     DateTime @default(now())
+  completedAt     DateTime?
+  failedAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
 }
 
 model Review {

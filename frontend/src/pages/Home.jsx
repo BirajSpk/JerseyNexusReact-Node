@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ShoppingBag, Truck, Shield, Star } from 'lucide-react';
+import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
+import { ShoppingBag, Truck, Shield, Star } from '../components/ui/ProfessionalIcon';
 import FeaturedProducts from '../components/FeaturedProducts';
+import FeaturedBlogs from '../components/FeaturedBlogs';
 
 const Home = () => {
   const features = [
@@ -157,6 +158,9 @@ const Home = () => {
 
       {/* Featured Products Section */}
       <FeaturedProducts />
+
+      {/* Featured Blogs Section */}
+      <FeaturedBlogs />
 
       {/* CTA Section */}
       <section className="py-16 bg-neutral">

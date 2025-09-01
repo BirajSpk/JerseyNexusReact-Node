@@ -20,13 +20,22 @@ const getBlogs = asyncHandler(async (req, res) => {
 });
 
 // @desc    Get single blog
-// @route   GET /api/blogs/:slug
+// @route   GET /api/blogs/slug/:slug or GET /api/blogs/:id
 // @access  Public
 const getBlog = asyncHandler(async (req, res) => {
-  const { slug } = req.params;
+  const { slug, id } = req.params;
+
+  let whereClause;
+  if (slug) {
+    whereClause = { slug };
+  } else if (id) {
+    whereClause = { id };
+  } else {
+    return sendResponse(res, 400, false, 'Blog slug or id is required');
+  }
 
   const blog = await prisma.blog.findUnique({
-    where: { slug },
+    where: whereClause,
     include: {
       category: true,
       author: { select: { name: true, avatar: true } }

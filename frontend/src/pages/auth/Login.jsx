@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { motion } from '../../utils/motion.jsx'; // Temporary motion wrapper
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from '../../components/ui/ProfessionalIcon';
+import { useForm } from '../../utils/forms'; // Temporary form wrapper
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
 import { setLoading, setError, loginSuccess, clearError } from '../../store/slices/authSlice';
@@ -240,6 +240,16 @@ const Login = () => {
               )}
             </button>
           </form>
+
+          {/* Forgot Password Link */}
+          <div className="mt-4 text-center">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-primary hover:text-primary/80 transition-colors"
+            >
+              Forgot your password?
+            </Link>
+          </div>
 
           {/* Sign Up Link */}
           <div className="mt-6 text-center">

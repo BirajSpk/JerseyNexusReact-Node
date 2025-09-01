@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
 import {
   Star,
   Heart,
@@ -14,11 +14,14 @@ import {
   CheckCircle,
   ArrowLeft,
   Zap
-} from 'lucide-react';
+} from '../components/ui/ProfessionalIcon';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../store/slices/cartSlice';
 import toast from 'react-hot-toast';
 import { productAPI } from '../utils/api';
+import BackButton from '../components/ui/BackButton';
+import RelatedProducts from '../components/RelatedProducts';
+import ImageZoom from '../components/ImageZoom';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -31,6 +34,7 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [processedImages, setProcessedImages] = useState([]);
   // No image index needed for single image
   const [activeTab, setActiveTab] = useState('description');
   
@@ -67,15 +71,12 @@ const ProductDetail = () => {
             }];
           }
 
-          // If no images, add placeholder
-          if (processedImages.length === 0) {
-            processedImages = [{
-              url: 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image',
-              altText: productData.name || 'Product Image'
-            }];
-          }
 
-          console.log('Processed images:', processedImages);
+          setProcessedImages(processedImages);
+
+
+
+          console.log('Processed images:', processedImages[0].url);
 
           // Process sizes - handle both string arrays and object arrays
           let processedSizes = [];
@@ -256,15 +257,12 @@ const ProductDetail = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
         >
-          {/* Main Image */}
+          {/* Main Image with Zoom */}
           <div className="relative mb-4">
-            <img
-              src={product.images?.[0]?.url || 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image'}
-              alt={product.images?.[0]?.altText || product.name}
-              className="w-full aspect-square object-cover rounded-lg"
-              onError={(e) => {
-                e.target.src = 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image';
-              }}
+            <ImageZoom
+              src={processedImages?.[0]?.url || 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image'}
+              alt={processedImages?.[0]?.altText || product.name}
+              className="w-full aspect-square rounded-lg"
             />
             {product.isNew && (
               <span className="absolute top-4 left-4 bg-secondary text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -276,14 +274,11 @@ const ProductDetail = () => {
                 {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
               </span>
             )}
-            
-            {/* No navigation arrows needed for single image */}
           </div>
-          
           {/* No thumbnail gallery needed for single image */}
         </motion.div>
 
-        {/* Product Info */}
+        {/* Product Details */}
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
@@ -555,6 +550,9 @@ const ProductDetail = () => {
           )}
         </div>
       </motion.div>
+
+      {/* Related Products Section */}
+      {product && <RelatedProducts currentProduct={product} />}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 const { asyncHandler, sendResponse, getPagination } = require('../utils/helpers');
 const WebSocketService = require('../utils/websocket');
 
@@ -118,6 +119,96 @@ const getUserById = asyncHandler(async (req, res) => {
   }
 
   sendResponse(res, 200, true, 'User retrieved successfully', { user });
+});
+
+// @desc    Create new user (Admin only)
+// @route   POST /api/users
+// @access  Private/Admin
+const createUser = asyncHandler(async (req, res) => {
+  const { name, email, role = 'USER', status = 'ACTIVE' } = req.body;
+
+  // Check if user already exists
+  const existingUser = await prisma.user.findUnique({
+    where: { email }
+  });
+
+  if (existingUser) {
+    return sendResponse(res, 400, false, 'User with this email already exists');
+  }
+
+  // Create user with default password (they should change it)
+  const defaultPassword = 'password123'; // In production, generate a random password and send via email
+  const hashedPassword = await bcrypt.hash(defaultPassword, 12);
+
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      status
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      status: true,
+      createdAt: true
+    }
+  });
+
+  sendResponse(res, 201, true, 'User created successfully', { user });
+});
+
+// @desc    Update user (Admin only)
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+const updateUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { name, email, role, status } = req.body;
+
+  // Check if user exists
+  const existingUser = await prisma.user.findUnique({
+    where: { id }
+  });
+
+  if (!existingUser) {
+    return sendResponse(res, 404, false, 'User not found');
+  }
+
+  // Check if email is being changed and if it's already taken
+  if (email && email !== existingUser.email) {
+    const emailExists = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (emailExists) {
+      return sendResponse(res, 400, false, 'Email already in use');
+    }
+  }
+
+  const updateData = {};
+  if (name) updateData.name = name;
+  if (email) updateData.email = email;
+  if (role) updateData.role = role;
+  if (status) updateData.status = status;
+
+  const user = await prisma.user.update({
+    where: { id },
+    data: updateData,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  });
+
+  sendResponse(res, 200, true, 'User updated successfully', { user });
 });
 
 // @desc    Update user role (Admin only)
@@ -316,12 +407,58 @@ const getProfile = asyncHandler(async (req, res) => {
   sendResponse(res, 200, true, 'Profile retrieved successfully', { user });
 });
 
+// @desc    Change user password
+// @route   PUT /api/users/change-password
+// @access  Private
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.id;
+
+  // Validate input
+  if (!currentPassword || !newPassword) {
+    return sendResponse(res, 400, false, 'Current password and new password are required');
+  }
+
+  if (newPassword.length < 6) {
+    return sendResponse(res, 400, false, 'New password must be at least 6 characters long');
+  }
+
+  // Get user with password
+  const user = await prisma.user.findUnique({
+    where: { id: userId }
+  });
+
+  if (!user) {
+    return sendResponse(res, 404, false, 'User not found');
+  }
+
+  // Verify current password
+  const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+  if (!isCurrentPasswordValid) {
+    return sendResponse(res, 400, false, 'Current password is incorrect');
+  }
+
+  // Hash new password
+  const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+
+  // Update password
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: hashedNewPassword }
+  });
+
+  sendResponse(res, 200, true, 'Password updated successfully');
+});
+
 module.exports = {
   getUsers,
   getUserById,
+  createUser,
+  updateUser,
   updateUserRole,
   deleteUser,
   getUserStats,
   updateProfile,
   getProfile,
+  changePassword,
 };

@@ -5,7 +5,7 @@ import { Home, ArrowLeft } from 'lucide-react';
 
 const NotFound = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral">
+    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-neutral py-8">
       <div className="container">
         <motion.div
           initial={{ opacity: 0, y: 50 }}

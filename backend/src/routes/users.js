@@ -2,11 +2,14 @@ const express = require('express');
 const {
   getUsers,
   getUserById,
+  createUser,
+  updateUser,
   updateUserRole,
   deleteUser,
   getUserStats,
   updateProfile,
   getProfile,
+  changePassword,
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middlewares/auth');
 const { body } = require('express-validator');
@@ -32,10 +35,30 @@ router.put('/profile', [
   validateRequest
 ], updateProfile);
 
-// @desc    Welcome message
+// @desc    Change password
+// @route   PUT /api/users/change-password
+// @access  Private
+router.put('/change-password', [
+  body('currentPassword').notEmpty().withMessage('Current password is required'),
+  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
+  validateRequest
+], changePassword);
+
+// @desc    Get all users
 // @route   GET /api/users
 // @access  Private/Admin
 router.get('/', authorize('ADMIN'), getUsers);
+
+// @desc    Create new user
+// @route   POST /api/users
+// @access  Private/Admin
+router.post('/', [
+  authorize('ADMIN'),
+  body('name').isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+  body('email').isEmail().withMessage('Must be a valid email'),
+  body('role').optional().isIn(['USER', 'ADMIN']).withMessage('Role must be USER or ADMIN'),
+  validateRequest
+], createUser);
 
 // @desc    Get user statistics
 // @route   GET /api/users/stats
@@ -46,6 +69,17 @@ router.get('/stats', authorize('ADMIN'), getUserStats);
 // @route   GET /api/users/:id
 // @access  Private/Admin
 router.get('/:id', authorize('ADMIN'), getUserById);
+
+// @desc    Update user
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+router.put('/:id', [
+  authorize('ADMIN'),
+  body('name').optional().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+  body('email').optional().isEmail().withMessage('Must be a valid email'),
+  body('role').optional().isIn(['USER', 'ADMIN']).withMessage('Role must be USER or ADMIN'),
+  validateRequest
+], updateUser);
 
 // @desc    Update user role
 // @route   PUT /api/users/:id/role
