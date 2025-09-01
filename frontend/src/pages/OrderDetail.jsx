@@ -11,7 +11,9 @@ import {
   Phone,
   Mail,
   Calendar,
-  CreditCard
+  CreditCard,
+  Trash2,
+  X
 } from '../components/ui/ProfessionalIcon';
 import toast from 'react-hot-toast';
 import { orderAPI, paymentAPI } from '../utils/api';
@@ -22,6 +24,8 @@ const OrderDetail = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -45,6 +49,30 @@ const OrderDetail = () => {
       fetchOrder();
     }
   }, [id, navigate]);
+
+  const handleDeleteOrder = async () => {
+    if (!order || order.paymentStatus !== 'PENDING') {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const response = await orderAPI.deleteOrder(order.id);
+
+      if (response.data.success) {
+        toast.success('Order cancelled successfully');
+        navigate('/profile?tab=orders');
+      } else {
+        throw new Error('Failed to cancel order');
+      }
+    } catch (error) {
+      console.error('Delete order error:', error);
+      toast.error('Failed to cancel order. Please try again.');
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   const handleRetryPayment = async () => {
     if (!order || order.paymentMethod !== 'KHALTI' || order.paymentStatus !== 'PENDING') {

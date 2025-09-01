@@ -1,13 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
-import {
-  Star,
-  ShoppingCart,
-  Heart,
-  Eye,
-  Zap
-} from './ui/ProfessionalIcon';
+import { motion } from '../utils/motion.jsx';
+import { Star, ShoppingCart, Heart, Eye, Zap } from './ui/ProfessionalIcon';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../store/slices/cartSlice';
 import { addToWishlist, removeFromWishlist } from '../store/slices/wishlistSlice';
@@ -16,8 +10,8 @@ import toast from 'react-hot-toast';
 const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const wishlistItems = useSelector(state => state.wishlist.items);
-  const isInWishlist = wishlistItems.some(item => item.id === product.id);
+  const wishlistItems = useSelector((state) => state.wishlist.items);
+  const isInWishlist = wishlistItems.some((item) => item.id === product.id);
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
@@ -32,9 +26,7 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
   const handleBuyNow = (e) => {
     e.stopPropagation();
     if (product.stock > 0) {
-      // Add to cart first
       dispatch(addToCart({ product, quantity: 1 }));
-      // Navigate to checkout
       window.scrollTo({ top: 0, behavior: 'smooth' });
       navigate('/checkout');
       toast.success('Redirecting to checkout...');
@@ -61,31 +53,23 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
     return [...Array(5)].map((_, i) => (
       <Star
         key={i}
-        className={`h-4 w-4 ${
-          i < Math.floor(rating) 
-            ? 'text-yellow-400 fill-current' 
-            : 'text-gray-300'
-        }`}
+        className={`h-4 w-4 ${i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
       />
     ));
   };
 
   const getStockStatus = (stock) => {
-    if (stock > 10) {
-      return { text: 'In Stock', className: 'bg-accent/10 text-accent' };
-    } else if (stock > 0) {
-      return { text: 'Low Stock', className: 'bg-secondary/10 text-secondary' };
-    } else {
-      return { text: 'Out of Stock', className: 'bg-danger/10 text-danger' };
-    }
+    if (stock > 10) return { text: 'In Stock', className: 'bg-accent/10 text-accent' };
+    if (stock > 0) return { text: 'Low Stock', className: 'bg-secondary/10 text-secondary' };
+    return { text: 'Out of Stock', className: 'bg-danger/10 text-danger' };
   };
 
   const stockStatus = getStockStatus(product.stock || 0);
-  const discountPercentage = product.salePrice && product.salePrice < product.price
-    ? Math.round(((product.price - product.salePrice) / product.price) * 100)
-    : 0;
+  const discountPercentage =
+    product.salePrice && product.salePrice < product.price
+      ? Math.round(((product.price - product.salePrice) / product.price) * 100)
+      : 0;
 
-  // Parse images if they're stored as JSON string
   const productImages = (() => {
     try {
       return product.images ? JSON.parse(product.images) : [];
@@ -94,47 +78,62 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
     }
   })();
 
+  const fallbackImage =
+    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSIyMDAiIHk9IjIxMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Qcm9kdWN0PC90ZXh0Pjwvc3ZnPg==';
+
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
+      transition={{ delay: index * 0.05 }}
       onClick={handleViewProduct}
-      className={`bg-white rounded-lg shadow-soft overflow-hidden group hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:-translate-y-1 ${
-        viewMode === 'list' ? 'flex' : 'flex flex-col h-full'
-      }`}
+      className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group hover:shadow-xl hover:border-primary/20 transition-all duration-300 cursor-pointer
+        ${viewMode === 'list' ? 'flex flex-row' : 'flex flex-col h-full'}
+      `}
     >
-      {/* Image Container */}
-      <div className={`relative ${viewMode === 'list' ? 'w-48 flex-shrink-0' : 'aspect-square'} overflow-hidden`}>
+      {/* Image */}
+      <div
+        className={`relative overflow-hidden ${
+          viewMode === 'list' ? 'w-48 h-48 flex-shrink-0' : 'aspect-square w-full'
+        }`}
+      >
         <img
-          src={productImages[0]?.url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSIyMDAiIHk9IjIxMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Qcm9kdWN0PC90ZXh0Pjwvc3ZnPg=='}
+          src={productImages[0]?.url || fallbackImage}
           alt={productImages[0]?.altText || product.name}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
-          onError={(e) => {
-            // Prevent infinite loop by checking if we're already showing the fallback
-            if (!e.target.src.includes('data:image')) {
-              e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxyZWN0IHg9IjE1MCIgeT0iMTc1IiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjOUNBM0FGIi8+Cjx0ZXh0IHg9IjIwMCIgeT0iMjA1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Qcm9kdWN0PC90ZXh0Pgo8L3N2Zz4K';
-            }
-          }}
         />
-        
+
         {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col space-y-1">
+        <div className="absolute top-3 left-3 flex flex-col space-y-2 z-10">
           {product.featured && (
-            <span className="bg-accent text-white px-2 py-1 rounded text-xs font-medium">
-              Featured
+            <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+              ⭐ Featured
             </span>
           )}
           {discountPercentage > 0 && (
-            <span className="bg-danger text-white px-2 py-1 rounded text-xs font-medium">
-              {discountPercentage}% OFF
+            <span className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+              -{discountPercentage}% OFF
+            </span>
+          )}
+          {product.isNew && (
+            <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+              🆕 New
             </span>
           )}
         </div>
-        
-        {/* Quick Actions Overlay */}
+
+        {/* Stock */}
+        <div className="absolute top-3 right-3 z-10">
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${stockStatus.className} backdrop-blur-sm`}
+          >
+            {stockStatus.text}
+          </span>
+        </div>
+
+        {/* Quick Actions */}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center space-x-3">
           <motion.button
             whileHover={{ scale: 1.1 }}
@@ -143,7 +142,7 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
               e.stopPropagation();
               handleViewProduct();
             }}
-            className="bg-white text-dark p-3 rounded-full hover:bg-neutral transition-colors shadow-lg"
+            className="bg-white p-3 rounded-full shadow-lg"
             title="Quick View"
           >
             <Eye className="h-5 w-5" />
@@ -152,114 +151,78 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleToggleWishlist}
-            className={`bg-white p-3 rounded-full hover:bg-neutral transition-colors shadow-lg ${
-              isInWishlist ? 'text-red-500' : 'text-dark'
-            }`}
-            title={isInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+            className={`bg-white p-3 rounded-full shadow-lg ${isInWishlist ? 'text-red-500' : 'text-dark'}`}
+            title={isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
           >
             <Heart className={`h-5 w-5 ${isInWishlist ? 'fill-current' : ''}`} />
           </motion.button>
         </div>
       </div>
-      
-      {/* Content */}
-      <div className={`p-4 flex flex-col h-full ${viewMode === 'list' ? 'flex-1' : ''}`}>
-        {/* Product Name */}
-        <h3 className="font-semibold text-dark line-clamp-2 hover:text-primary transition-colors mb-2 text-sm sm:text-base">
-          {product.name}
-        </h3>
-        
-        {/* Category */}
-        {product.category && (
-          <p className="text-sm text-muted mb-2 font-medium">{product.category.name}</p>
-        )}
 
-        {/* Rating */}
-        <div className="flex items-center mb-3">
-          <div className="flex items-center space-x-1">
-            {renderStars(product.rating || 0)}
-          </div>
-          <span className="text-sm text-muted ml-2">
-            ({product.reviews?.length || 0})
-          </span>
-        </div>
-        
-        {/* Price Section */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-2">
-            <span className="text-lg font-bold text-dark">
-              NPR {(product.salePrice || product.price)?.toLocaleString()}
+      {/* Content */}
+      <div className={`p-4 flex flex-col justify-between ${viewMode === 'list' ? 'flex-1' : ''}`}>
+        <div>
+          {product.category && (
+            <span className="text-xs text-gray-600 px-2 py-1 rounded-full bg-gray-100 mb-2">
+              {product.category.name}
             </span>
+          )}
+
+          <h3 className="font-semibold text-gray-900 mb-2 text-base line-clamp-2">{product.name}</h3>
+
+          {/* Rating */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-1">
+              {renderStars(product.rating || 0)}
+              <span className="text-sm text-gray-500 ml-1">({product.rating || 0})</span>
+            </div>
+            <span className="text-xs text-gray-400">{product.reviews?.length || 0} reviews</span>
+          </div>
+
+          {/* Price */}
+          <div className="mb-4">
+            <div className="flex items-baseline space-x-2 mb-1">
+              <span className="text-xl font-bold text-gray-900">
+                NPR {(product.salePrice || product.price)?.toLocaleString()}
+              </span>
+              {discountPercentage > 0 && (
+                <span className="text-sm text-gray-500 line-through">NPR {product.price?.toLocaleString()}</span>
+              )}
+            </div>
             {discountPercentage > 0 && (
-              <span className="text-sm text-muted line-through">
-                NPR {product.price?.toLocaleString()}
+              <span className="text-xs text-green-600 font-medium">
+                You save NPR {(product.price - (product.salePrice || product.price))?.toLocaleString()}
               </span>
             )}
           </div>
-          <span className={`text-xs px-2 py-1 rounded font-medium ${stockStatus.className}`}>
-            {stockStatus.text}
-          </span>
-        </div>
-        
-        {/* Description (List view only) */}
-        {viewMode === 'list' && (
-          <p className="text-sm text-muted mb-4 line-clamp-2">
-            {product.description}
-          </p>
-        )}
-        
-        {/* Action Buttons */}
-        <div className="mt-auto pt-3">
-          {product.stock === 0 ? (
-            /* Out of Stock Button */
-            <motion.button
-              disabled
-              className="w-full py-3 rounded-lg font-semibold text-sm bg-gray-100 text-gray-400 cursor-not-allowed flex items-center justify-center space-x-2 border border-gray-200"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              <span>Out of Stock</span>
-            </motion.button>
-          ) : (
-            /* In Stock Buttons */
-            <div className="space-y-2">
-              {/* Add to Cart Button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleAddToCart}
-                className="w-full py-2.5 rounded-lg font-semibold text-sm bg-white text-primary border-2 border-primary hover:bg-primary hover:text-white transition-all duration-200 flex items-center justify-center space-x-2 shadow-sm"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                <span>Add to Cart</span>
-              </motion.button>
 
-              {/* Buy Now Button */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleBuyNow}
-                className="w-full py-2.5 rounded-lg font-semibold text-sm bg-primary text-white hover:bg-primary/90 active:bg-primary/80 transition-all duration-200 flex items-center justify-center space-x-2 shadow-sm"
-              >
-                <Zap className="h-4 w-4" />
-                <span>Buy Now</span>
-              </motion.button>
-            </div>
+          {viewMode === 'list' && (
+            <p className="text-sm text-muted mb-4 line-clamp-3">{product.description}</p>
           )}
         </div>
-        
-        {/* Additional Info (List view only) */}
-        {viewMode === 'list' && (
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <div className="flex items-center justify-between text-xs text-muted">
-              <span>Stock: {product.stock}</span>
-              {product.category && (
-                <span className="bg-primary/10 text-primary px-2 py-1 rounded">
-                  {product.category.name}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+
+        {/* Actions */}
+        <div className="flex space-x-2 mt-2">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleAddToCart}
+            className="flex-1 py-2 bg-gray-50 text-gray-700 rounded-xl border border-gray-200 flex items-center justify-center space-x-2 hover:bg-gray-100"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            <span>Add to Cart</span>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleBuyNow}
+            className="flex-1 py-2 bg-gradient-to-r from-primary to-primary/90 text-white rounded-xl flex items-center justify-center space-x-2 shadow-lg"
+          >
+            <Zap className="h-4 w-4" />
+            <span>Buy Now</span>
+          </motion.button>
+        </div>
       </div>
     </motion.div>
   );

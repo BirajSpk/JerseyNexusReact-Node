@@ -9,6 +9,7 @@ const {
   getUserStats,
   updateProfile,
   getProfile,
+  changePassword,
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middlewares/auth');
 const { body } = require('express-validator');
@@ -33,6 +34,15 @@ router.put('/profile', [
   body('phone').optional().isLength({ min: 10 }).withMessage('Phone must be at least 10 characters'),
   validateRequest
 ], updateProfile);
+
+// @desc    Change password
+// @route   PUT /api/users/change-password
+// @access  Private
+router.put('/change-password', [
+  body('currentPassword').notEmpty().withMessage('Current password is required'),
+  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
+  validateRequest
+], changePassword);
 
 // @desc    Get all users
 // @route   GET /api/users

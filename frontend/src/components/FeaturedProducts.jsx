@@ -40,8 +40,8 @@ const FeaturedProducts = () => {
             stock: product.stock || 0,
             featured: true
           }));
-
-          setFeaturedProducts(processedProducts.slice(0, 8)); // Limit to 8 products
+            // Only 8 products at a time 
+          setFeaturedProducts(processedProducts.slice(0, 8)); 
         } else {
           throw new Error('Failed to fetch featured products');
         }
@@ -49,7 +49,7 @@ const FeaturedProducts = () => {
         console.error('Error fetching featured products:', error);
         setError('Failed to load featured products');
 
-        // Show error message instead of fallback data
+       
         toast.error('Failed to load featured products');
       } finally {
         setLoading(false);

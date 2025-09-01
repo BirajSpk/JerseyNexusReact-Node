@@ -9,7 +9,8 @@ const WebSocketService = require('./utils/websocket');
 const DatabaseChecker = require('./utils/dbCheck');
 require('dotenv').config();
 const prisma = require("../src/config/database.js") 
-const seedDummyData = require('./utils/dummyData');
+const {seedDummyData} = require('../prisma/dummydata.js');
+
 prisma.$connect();
 
 const authRoutes = require('./routes/auth');
@@ -139,7 +140,7 @@ app.get('/', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Database startup check
 async function startServer() {
@@ -172,6 +173,8 @@ async function startServer() {
 }
 
 
+//seeding the dummy data
+// seedDummyData();
 
 // Start the server
 startServer().catch(error => {

@@ -407,6 +407,49 @@ const getProfile = asyncHandler(async (req, res) => {
   sendResponse(res, 200, true, 'Profile retrieved successfully', { user });
 });
 
+// @desc    Change user password
+// @route   PUT /api/users/change-password
+// @access  Private
+const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.id;
+
+  // Validate input
+  if (!currentPassword || !newPassword) {
+    return sendResponse(res, 400, false, 'Current password and new password are required');
+  }
+
+  if (newPassword.length < 6) {
+    return sendResponse(res, 400, false, 'New password must be at least 6 characters long');
+  }
+
+  // Get user with password
+  const user = await prisma.user.findUnique({
+    where: { id: userId }
+  });
+
+  if (!user) {
+    return sendResponse(res, 404, false, 'User not found');
+  }
+
+  // Verify current password
+  const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+  if (!isCurrentPasswordValid) {
+    return sendResponse(res, 400, false, 'Current password is incorrect');
+  }
+
+  // Hash new password
+  const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+
+  // Update password
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: hashedNewPassword }
+  });
+
+  sendResponse(res, 200, true, 'Password updated successfully');
+});
+
 module.exports = {
   getUsers,
   getUserById,
@@ -417,4 +460,5 @@ module.exports = {
   getUserStats,
   updateProfile,
   getProfile,
+  changePassword,
 };

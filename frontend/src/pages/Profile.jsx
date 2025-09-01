@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from '../utils/forms'; // Temporary form wrapper
 import { motion, AnimatePresence } from '../utils/motion.jsx'; // Temporary motion wrapper
 import {
@@ -32,12 +32,16 @@ import WebSocketService from '../services/websocket';
 const Profile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, isAuthenticated } = useSelector(state => state.auth);
   const wishlistItems = useSelector(state => state.wishlist.items);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showCropper, setShowCropper] = useState(false);
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = searchParams.get('tab');
+    return tab && ['profile', 'orders', 'wishlist'].includes(tab) ? tab : 'profile';
+  });
   const [profileData, setProfileData] = useState(null);
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -173,6 +177,28 @@ const Profile = () => {
       toast.error(error.response?.data?.message || 'Failed to update profile');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePasswordUpdate = async ({ currentPassword, newPassword }) => {
+    try {
+      // Call password update API
+      const response = await userAPI.changePassword({
+        currentPassword,
+        newPassword
+      });
+
+      if (response.data.success) {
+        toast.success('Password updated successfully!');
+        // Reset form
+        const form = document.querySelector('form[data-password-form]');
+        if (form) form.reset();
+      } else {
+        toast.error(response.data.message || 'Failed to update password');
+      }
+    } catch (error) {
+      console.error('Password update error:', error);
+      toast.error(error.response?.data?.message || 'Failed to update password. Please try again.');
     }
   };
 
@@ -850,9 +876,95 @@ const Profile = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">Security Settings</h2>
-                  <div className="text-center py-12">
-                    <Shield className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                    <p className="text-gray-600">Security settings will be implemented here</p>
+
+                  {/* Change Password Form */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                      <Shield className="w-5 h-5 mr-2 text-blue-600" />
+                      Change Password
+                    </h3>
+
+                    <form className="space-y-4" data-password-form onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.target);
+                      const currentPassword = formData.get('currentPassword');
+                      const newPassword = formData.get('newPassword');
+                      const confirmPassword = formData.get('confirmPassword');
+
+                      if (newPassword !== confirmPassword) {
+                        toast.error('New passwords do not match');
+                        return;
+                      }
+
+                      if (newPassword.length < 6) {
+                        toast.error('Password must be at least 6 characters long');
+                        return;
+                      }
+
+                      // Handle password update
+                      handlePasswordUpdate({ currentPassword, newPassword });
+                    }}>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Current Password
+                        </label>
+                        <input
+                          type="password"
+                          name="currentPassword"
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter your current password"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          New Password
+                        </label>
+                        <input
+                          type="password"
+                          name="newPassword"
+                          required
+                          minLength="6"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter your new password"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Confirm New Password
+                        </label>
+                        <input
+                          type="password"
+                          name="confirmPassword"
+                          required
+                          minLength="6"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Confirm your new password"
+                        />
+                      </div>
+
+                      <div className="flex justify-end">
+                        <button
+                          type="submit"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                        >
+                          Update Password
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Account Security Info */}
+                  <div className="mt-6 bg-blue-50 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-blue-900 mb-2">Security Tips</h4>
+                    <ul className="text-sm text-blue-800 space-y-1">
+                      <li>• Use a strong password with at least 8 characters</li>
+                      <li>• Include uppercase, lowercase, numbers, and special characters</li>
+                      <li>• Don't reuse passwords from other accounts</li>
+                      <li>• Change your password regularly</li>
+                    </ul>
                   </div>
                 </motion.div>
               )}

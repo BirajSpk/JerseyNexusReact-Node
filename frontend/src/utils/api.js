@@ -1,7 +1,7 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 // Create axios instance
 const api = axios.create({
@@ -67,6 +67,7 @@ export const authAPI = {
 export const userAPI = {
   getProfile: () => api.get('/users/profile'),
   updateProfile: (data) => api.put('/users/profile', data),
+  changePassword: (data) => api.put('/users/change-password', data),
   getUsers: (params) => api.get('/users', { params }),
   getUserById: (id) => api.get(`/users/${id}`),
   updateUserRole: (id, role) => api.put(`/users/${id}/role`, { role }),
@@ -100,11 +101,14 @@ export const orderAPI = {
   getOrderById: (id) => api.get(`/orders/${id}`),
   createOrder: (data) => api.post('/orders', data),
   updateOrderStatus: (id, data) => api.put(`/orders/${id}`, data),
+  deleteOrder: (id) => api.delete(`/orders/${id}`),
 };
 
 export const paymentAPI = {
   initiateKhalti: (data) => api.post('/payments/khalti/initiate', data),
   verifyKhalti: (data) => api.post('/payments/khalti/verify', data),
+  initiateEsewa: (data) => api.post('/payments/esewa/initiate', data),
+  verifyEsewa: (data) => api.post('/payments/esewa/verify', data),
   processCOD: (data) => api.post('/payments/cod/process', data),
 };
 

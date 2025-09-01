@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const { asyncHandler, sendResponse, getPagination } = require('../utils/helpers');
 const WebSocketService = require('../utils/websocket');
+const orderService = require('../services/orderService');
 
 const prisma = new PrismaClient();
 
@@ -163,30 +164,52 @@ const getOrder = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const deleteOrder = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const userId = req.user.role === 'ADMIN' ? null : req.user.id;
 
-  // Check if order exists
-  const existingOrder = await prisma.order.findUnique({
-    where: { id }
-  });
+  try {
+    if (req.user.role === 'ADMIN') {
+      // Admin can delete any order
+      const existingOrder = await prisma.order.findUnique({
+        where: { id }
+      });
 
-  if (!existingOrder) {
-    return res.status(404).json({
-      success: false,
-      error: 'Order not found'
-    });
+      if (!existingOrder) {
+        return res.status(404).json({
+          success: false,
+          error: 'Order not found'
+        });
+      }
+
+      // Delete order (cascade will handle related records)
+      await prisma.order.delete({
+        where: { id }
+      });
+
+      // Notify via WebSocket
+      WebSocketService.notifyOrderUpdate(id, {
+        type: 'order_deleted',
+        orderId: id,
+        deletedBy: 'admin'
+      });
+
+      sendResponse(res, 200, true, 'Order deleted successfully');
+    } else {
+      // User can only delete their own pending orders
+      const result = await orderService.deleteOrder(id, userId);
+
+      // Notify via WebSocket
+      WebSocketService.notifyOrderUpdate(id, {
+        type: 'order_cancelled',
+        orderId: id,
+        cancelledBy: 'user'
+      });
+
+      sendResponse(res, 200, true, result.message);
+    }
+  } catch (error) {
+    console.error('Delete order error:', error);
+    sendResponse(res, 400, false, error.message);
   }
-
-  // Delete order items first (due to foreign key constraints)
-  await prisma.orderItem.deleteMany({
-    where: { orderId: id }
-  });
-
-  // Delete the order
-  await prisma.order.delete({
-    where: { id }
-  });
-
-  sendResponse(res, 200, true, 'Order deleted successfully');
 });
 
 module.exports = {

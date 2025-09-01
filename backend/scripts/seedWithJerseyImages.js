@@ -400,13 +400,13 @@ async function main() {
   }
 }
 
+
 main()
   .then(async () => {
     await prisma.$disconnect();
-    console.log('🔌 Database connection closed');
   })
   .catch(async (e) => {
-    console.error('💥 Critical Error:', e.message);
+    console.error('❌ Error seeding database:', e);
     await prisma.$disconnect();
     process.exit(1);
   });
