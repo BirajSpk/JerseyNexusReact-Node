@@ -30,6 +30,8 @@ import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import OrderTracking from './pages/OrderTracking';
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentFailed from './pages/PaymentFailed';
 
 function App() {
   const location = useLocation();
@@ -56,6 +58,8 @@ function App() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/payment-selection" element={<PaymentSelection />} />
             <Route path="/order-success" element={<OrderSuccess />} />
+            <Route path="/payment/success" element={<PaymentSuccess />} />
+            <Route path="/payment/failed" element={<PaymentFailed />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

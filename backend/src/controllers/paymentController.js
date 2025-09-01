@@ -57,8 +57,8 @@ const initiateKhaltiPayment = asyncHandler(async (req, res) => {
 
   try {
     const payload = {
-      return_url: returnUrl || KHALTI_RETURN_URL,
-      website_url: "http://localhost:3000",
+      return_url: process.env.KHALTI_RETURN_URL || 'http://localhost:5001/api/payments/khalti/callback-new',
+      website_url: process.env.FRONTEND_URL || "http://localhost:3000",
       amount: Math.round(order.totalAmount * 100), // Convert to paisa (smallest currency unit)
       purchase_order_id: purchaseOrderId,
       purchase_order_name: purchaseOrderName,
@@ -409,10 +409,131 @@ const verifyEsewaPayment = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Handle Khalti callback
+// @route   GET /api/payments/khalti/callback
+// @access  Public
+const handleKhaltiCallbackNew = asyncHandler(async (req, res) => {
+  try {
+    const {
+      pidx,
+      transaction_id,
+      tidx,
+      txnId,
+      amount,
+      total_amount,
+      mobile,
+      status,
+      purchase_order_id,
+      purchase_order_name
+    } = req.query;
+
+    console.log('📞 Khalti Callback Received:', req.query);
+
+    // Find the payment record by external ID (pidx)
+    let payment = await paymentService.getPaymentByExternalId(pidx);
+
+    if (!payment) {
+      // If payment not found by pidx, try to find by purchase_order_id
+      payment = await paymentService.getPaymentById(purchase_order_id);
+    }
+
+    if (!payment) {
+      console.error('❌ Payment not found for pidx:', pidx, 'or purchase_order_id:', purchase_order_id);
+      return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?error=payment_not_found`);
+    }
+
+    // Verify with Khalti API
+    const verificationResponse = await axios.post('https://a.khalti.com/api/v2/epayment/lookup/', {
+      pidx
+    }, {
+      headers: {
+        'Authorization': `Key ${process.env.KHALTI_SECRET_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const khaltiData = verificationResponse.data;
+    console.log('🔍 Khalti Verification Response:', khaltiData);
+
+    if (status === 'Completed' && khaltiData.status === 'Completed') {
+      // Update payment as successful
+      await paymentService.updatePaymentStatus(payment.id, 'SUCCESS', {
+        transactionId: transaction_id,
+        gatewayResponse: {
+          ...khaltiData,
+          callback_data: req.query
+        },
+        metadata: {
+          ...payment.metadata,
+          mobile,
+          khalti_transaction_id: transaction_id,
+          khalti_tidx: tidx,
+          khalti_txnId: txnId,
+          verifiedAt: new Date(),
+          callback_received_at: new Date()
+        }
+      });
+
+      // Notify via WebSocket
+      WebSocketService.notifyOrderUpdate(payment.orderId, {
+        type: 'payment_success',
+        orderId: payment.orderId,
+        paymentMethod: 'KHALTI',
+        transactionId: transaction_id
+      });
+
+      console.log('✅ Payment successful for order:', payment.orderId);
+
+      // Redirect to success page
+      return res.redirect(`${process.env.FRONTEND_URL}/payment/success?orderId=${payment.orderId}&transactionId=${transaction_id}`);
+    } else {
+      // Update payment as failed
+      await paymentService.updatePaymentStatus(payment.id, 'FAILED', {
+        failureReason: `Khalti payment failed. Status: ${status}`,
+        gatewayResponse: {
+          ...khaltiData,
+          callback_data: req.query
+        },
+        metadata: {
+          ...payment.metadata,
+          failed_at: new Date(),
+          failure_status: status
+        }
+      });
+
+      console.log('❌ Payment failed for order:', payment.orderId);
+
+      // Redirect to failure page
+      return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?orderId=${payment.orderId}&reason=payment_failed`);
+    }
+
+  } catch (error) {
+    console.error('❌ Khalti callback error:', error);
+
+    // Try to update payment as failed if we have the payment info
+    if (req.query.purchase_order_id) {
+      try {
+        const payment = await paymentService.getPaymentById(req.query.purchase_order_id);
+        if (payment) {
+          await paymentService.updatePaymentStatus(payment.id, 'FAILED', {
+            failureReason: 'Callback processing error',
+            gatewayResponse: { error: error.message, callback_data: req.query }
+          });
+        }
+      } catch (updateError) {
+        console.error('Failed to update payment status:', updateError);
+      }
+    }
+
+    return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?error=callback_error`);
+  }
+});
+
 module.exports = {
   initiateKhaltiPayment,
   verifyKhaltiPayment,
   handleKhaltiCallback,
+  handleKhaltiCallbackNew,
   processCODOrder,
   initiateEsewaPayment,
   verifyEsewaPayment

@@ -4,6 +4,7 @@ const {
   initiateKhaltiPayment,
   verifyKhaltiPayment,
   handleKhaltiCallback,
+  handleKhaltiCallbackNew,
   processCODOrder,
   initiateEsewaPayment,
   verifyEsewaPayment
@@ -14,7 +15,8 @@ const router = express.Router();
 // Khalti payment routes
 router.post('/khalti/initiate', protect, initiateKhaltiPayment);
 router.post('/khalti/verify', protect, verifyKhaltiPayment);
-router.get('/khalti/callback', handleKhaltiCallback); // Public route for callback
+router.get('/khalti/callback', handleKhaltiCallback); // Public route for callback (old)
+router.get('/khalti/callback-new', handleKhaltiCallbackNew); // Public route for new callback
 
 // eSewa payment routes
 router.post('/esewa/initiate', protect, initiateEsewaPayment);
