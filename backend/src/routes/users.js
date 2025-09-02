@@ -31,7 +31,8 @@ router.get('/profile', getProfile);
 router.put('/profile', [
   body('name').optional().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
   body('email').optional().isEmail().withMessage('Must be a valid email'),
-  body('phone').optional().isLength({ min: 10 }).withMessage('Phone must be at least 10 characters'),
+  body('phone').optional().matches(/^[\+]?[0-9\s\-\(\)]{10,15}$/).withMessage('Please provide a valid phone number'),
+  body('address').optional().isObject().withMessage('Address must be an object'),
   validateRequest
 ], updateProfile);
 

@@ -147,7 +147,7 @@ model OrderItem {
 
 model Payment {
   id              String   @id @default(cuid())
-  orderId         String
+  orderId         String?
   amount          Float    // Payment amount
   currency        String   @default("NPR")
   method          String   // KHALTI, ESEWA, COD
@@ -174,7 +174,7 @@ model Payment {
   updatedAt DateTime @updatedAt
 
   // Relations
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("payments")
 }

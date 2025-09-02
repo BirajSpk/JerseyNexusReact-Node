@@ -57,9 +57,10 @@ const BlogManagement = () => {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories`, config);
+      // Request only BLOG categories
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories?type=BLOG`, config);
       const allCategories = response.data.data?.categories || response.data.data || [];
-      setCategories(allCategories.filter(cat => cat.type === 'BLOG'));
+      setCategories(allCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast.error('Failed to load categories');
@@ -175,6 +176,24 @@ const BlogManagement = () => {
     setEditingBlog(null);
   };
 
+  // Inline category creation for BLOG categories
+  const handleCreateCategory = async () => {
+    const name = prompt('Enter new blog category name:');
+    if (!name) return;
+    try {
+      const token = localStorage.getItem('token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories`, { name, type: 'BLOG' }, config);
+      toast.success('Category created');
+      // Refresh categories and preselect the new one
+      await fetchCategories();
+      setFormData(prev => ({ ...prev, categoryId: res.data.data.category.id }));
+    } catch (e) {
+      console.error('Create category error', e);
+      toast.error(e.response?.data?.message || 'Failed to create category');
+    }
+  };
+
   const getStatusColor = (status) => {
     const statusObj = blogStatuses.find(s => s.value === status);
     return statusObj ? statusObj.color : 'bg-gray-100 text-gray-800';
@@ -273,11 +292,11 @@ const BlogManagement = () => {
                   )}
                 </div>
               </div>
-              
+
               <p className="text-sm text-gray-600 mb-4 line-clamp-3">
                 {blog.excerpt || blog.content?.substring(0, 150) + '...'}
               </p>
-              
+
               <div className="flex items-center justify-between mb-4">
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(blog.status)}`}>
                   {blogStatuses.find(s => s.value === blog.status)?.label || blog.status}
@@ -286,7 +305,7 @@ const BlogManagement = () => {
                   {formatDate(blog.createdAt)}
                 </span>
               </div>
-              
+
               <div className="flex justify-between items-center">
                 <span className="text-xs text-gray-500">
                   {blog.category?.name || 'No Category'}
@@ -364,6 +383,14 @@ const BlogManagement = () => {
                       ))}
                     </select>
                   </div>
+                    <button
+                      type="button"
+                      onClick={handleCreateCategory}
+                      className="mt-2 inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      + Create Category
+                    </button>
+
                 </div>
 
                 <div>

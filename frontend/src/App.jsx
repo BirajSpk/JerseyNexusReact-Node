@@ -32,6 +32,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import OrderTracking from './pages/OrderTracking';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailed from './pages/PaymentFailed';
+import KhaltiCallback from './pages/KhaltiCallback';
 
 function App() {
   const location = useLocation();
@@ -60,6 +61,7 @@ function App() {
             <Route path="/order-success" element={<OrderSuccess />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/failed" element={<PaymentFailed />} />
+            <Route path="/khalti/callback" element={<KhaltiCallback />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

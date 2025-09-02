@@ -59,7 +59,12 @@ export const validatePhone = (phone) => {
 };
 
 export const getImageUrl = (imagePath) => {
-  if (!imagePath) return 'https://via.placeholder.com/400x400/f3f4f6/9ca3af?text=Product';
+  if (!imagePath) return 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="#f3f4f6"/><text x="200" y="210" text-anchor="middle" fill="#9ca3af" font-family="Arial" font-size="16">Product</text></svg>');
   if (imagePath.startsWith('http')) return imagePath;
-  return `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${imagePath}`;
+  // Derive API origin even if VITE_API_URL includes /api suffix
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5003/api';
+  const origin = apiBase.replace(/\/api\/?$/, '');
+  // Ensure imagePath starts with /
+  const path = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  return `${origin}${path}`;
 };

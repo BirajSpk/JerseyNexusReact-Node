@@ -111,7 +111,7 @@ const BlogDetail = () => {
             {blog.featuredImage && (
               <div className="mb-8">
                 <img
-                  src={blog.featuredImage}
+                  src={getImageUrl(blog.featuredImage)}
                   alt={blog.title}
                   className="w-full h-64 md:h-96 object-cover rounded-lg shadow-lg"
                 />
@@ -145,7 +145,7 @@ const BlogDetail = () => {
                     <div className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                       {relatedBlog.featuredImage && (
                         <img
-                          src={relatedBlog.featuredImage}
+                          src={getImageUrl(relatedBlog.featuredImage)}
                           alt={relatedBlog.title}
                           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                         />

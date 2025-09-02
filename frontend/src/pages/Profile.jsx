@@ -206,35 +206,30 @@ const Profile = () => {
     try {
       const formData = new FormData();
       formData.append('profile', croppedFile);
-      
+
       const uploadResponse = await uploadAPI.uploadProfile(formData);
-      const imageUrl = uploadResponse.data.data.url;
-      
-      // Update profile with new avatar
-      await userAPI.updateProfile({ avatar: imageUrl });
-      
+      const responseData = uploadResponse.data.data;
+
+      // The backend now automatically updates the user's avatar and returns the updated user
+      const updatedUser = responseData.user;
+
       // Update local state and Redux
-      const updatedUser = { ...profileData, avatar: imageUrl };
       setProfileData(updatedUser);
       dispatch(updateProfile(updatedUser));
-      
+
       setShowCropper(false);
       toast.success('Profile photo updated successfully!');
     } catch (error) {
       console.error('Error uploading profile photo:', error);
-      toast.error('Failed to upload profile photo');
+      toast.error(error.response?.data?.message || 'Failed to upload profile photo');
     }
   };
 
   const getAvatarUrl = () => {
     if (profileData?.avatar) {
-      // If avatar starts with 'http', it's already a full URL
-      if (profileData.avatar.startsWith('http')) {
-        return profileData.avatar;
-      }
-      // Otherwise, prepend the API base URL
-      const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5001';
-      return `${baseUrl}${profileData.avatar}`;
+      if (profileData.avatar.startsWith('http')) return profileData.avatar;
+      const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5003/api').replace('/api', '');
+      return `${baseUrl}${profileData.avatar.startsWith('/') ? '' : '/'}${profileData.avatar}`;
     }
     return 'https://static.vecteezy.com/system/resources/previews/005/544/718/non_2x/profile-icon-design-free-vector.jpg';
   };

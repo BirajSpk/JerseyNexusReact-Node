@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from '../utils/motion';
 import { Calendar, User, Search, Filter, ArrowRight } from '../components/ui/ProfessionalIcon';
 import { blogAPI } from '../utils/api';
+import { getImageUrl } from '../utils/helpers';
 
 const Blogs = () => {
   const [blogs, setBlogs] = useState([]);
@@ -32,7 +33,7 @@ const Blogs = () => {
           createdAt: '2024-01-15T10:00:00Z',
           author: { name: 'Sports Editor' },
           category: { name: 'Sports History' },
-          featuredImage: 'https://via.placeholder.com/600x400/1e40af/ffffff?text=Football+Evolution'
+          featuredImage: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjYwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiMxZTQwYWYiLz48dGV4dCB4PSIzMDAiIHk9IjIwNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Rm9vdGJhbGwgRXZvbHV0aW9uPC90ZXh0Pjwvc3ZnPg=='
         },
         {
           id: '2',
@@ -42,7 +43,7 @@ const Blogs = () => {
           createdAt: '2024-01-12T14:30:00Z',
           author: { name: 'Fashion Expert' },
           category: { name: 'Fashion' },
-          featuredImage: 'https://via.placeholder.com/600x400/dc2626/ffffff?text=Iconic+Jerseys'
+          featuredImage: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjYwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNkYzI2MjYiLz48dGV4dCB4PSIzMDAiIHk9IjIwNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SWNvbmljIEplcnNleXM8L3RleHQ+PC9zdmc+'
         },
         {
           id: '3',
@@ -52,7 +53,7 @@ const Blogs = () => {
           createdAt: '2024-01-10T09:15:00Z',
           author: { name: 'Style Guide' },
           category: { name: 'Buying Guide' },
-          featuredImage: 'https://via.placeholder.com/600x400/059669/ffffff?text=Size+Guide'
+          featuredImage: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjYwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiMwNTk2NjkiLz48dGV4dCB4PSIzMDAiIHk9IjIwNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U2l6ZSBHdWlkZTwvdGV4dD48L3N2Zz4='
         },
         {
           id: '4',
@@ -62,7 +63,7 @@ const Blogs = () => {
           createdAt: '2024-01-08T16:45:00Z',
           author: { name: 'Premier League Insider' },
           category: { name: 'News' },
-          featuredImage: 'https://via.placeholder.com/600x400/7c3aed/ffffff?text=Premier+League'
+          featuredImage: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjYwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiM3YzNhZWQiLz48dGV4dCB4PSIzMDAiIHk9IjIwNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UHJlbWllciBMZWFndWU8L3RleHQ+PC9zdmc+'
         },
         {
           id: '5',
@@ -72,7 +73,7 @@ const Blogs = () => {
           createdAt: '2024-01-05T11:20:00Z',
           author: { name: 'Care Expert' },
           category: { name: 'Care Guide' },
-          featuredImage: 'https://via.placeholder.com/600x400/ea580c/ffffff?text=Care+Tips'
+          featuredImage: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjYwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNlYTU4MGMiLz48dGV4dCB4PSIzMDAiIHk9IjIwNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+Q2FyZSBUaXBzPC90ZXh0Pjwvc3ZnPg=='
         },
         {
           id: '6',
@@ -82,7 +83,7 @@ const Blogs = () => {
           createdAt: '2024-01-03T13:10:00Z',
           author: { name: 'Sports Psychologist' },
           category: { name: 'Psychology' },
-          featuredImage: 'https://via.placeholder.com/600x400/be185d/ffffff?text=Psychology'
+          featuredImage: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDYwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjYwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNiZTE4NWQiLz48dGV4dCB4PSIzMDAiIHk9IjIwNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UHN5Y2hvbG9neTwvdGV4dD48L3N2Zz4='
         }
       ]);
 
@@ -236,7 +237,7 @@ const Blogs = () => {
                   >
                     <div className="relative overflow-hidden">
                       <img
-                        src={blog.featuredImage || 'https://via.placeholder.com/600x400/f3f4f6/9ca3af?text=Blog+Image'}
+                        src={getImageUrl(blog.featuredImage) || 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="#f3f4f6"/><text x="300" y="205" fill="#9ca3af" text-anchor="middle">Blog Image</text></svg>')}
                         alt={blog.title}
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => {

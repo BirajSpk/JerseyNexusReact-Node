@@ -94,7 +94,7 @@ const DashboardStats = () => {
     },
     {
       title: 'Total Revenue',
-      value: `$${(stats.totalRevenue / 100).toFixed(2)}`,
+      value: new Intl.NumberFormat('en-NP', { style: 'currency', currency: 'NPR', minimumFractionDigits: 0 }).format(stats.totalRevenue),
       icon: '💰',
       color: 'bg-yellow-500',
       change: '+23%',

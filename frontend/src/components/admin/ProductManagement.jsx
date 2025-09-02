@@ -36,7 +36,7 @@ const ProductManagement = () => {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/products`, config);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/products`, config);
       setProducts(response.data.data?.products || response.data.data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -52,9 +52,10 @@ const ProductManagement = () => {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories`, config);
+      // Request only PRODUCT categories
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories?type=PRODUCT`, config);
       const allCategories = response.data.data?.categories || response.data.data || [];
-      setCategories(allCategories.filter(cat => cat.type === 'PRODUCT'));
+      setCategories(allCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast.error('Failed to load categories');
@@ -73,6 +74,10 @@ const ProductManagement = () => {
       Object.keys(formData).forEach(key => {
         submitData.append(key, formData[key]);
       });
+
+      // Normalize currency: ensure price/salePrice are numbers in NPR
+      if (formData.price) submitData.set('price', String(parseFloat(formData.price)));
+      if (formData.salePrice) submitData.set('salePrice', String(parseFloat(formData.salePrice)));
 
       // Add images
       productImages.forEach((image, index) => {
@@ -93,10 +98,10 @@ const ProductManagement = () => {
       };
 
       if (editingProduct) {
-        await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/products/${editingProduct.id}`, submitData, config);
+        await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/products/${editingProduct.id}`, submitData, config);
         toast.success('Product updated successfully!');
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/products`, submitData, config);
+        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/products`, submitData, config);
         toast.success('Product created successfully!');
       }
 
@@ -203,6 +208,24 @@ const ProductManagement = () => {
     setEditingProduct(null);
   };
 
+  // Inline category creation for PRODUCT categories
+  const handleCreateCategory = async () => {
+    const name = prompt('Enter new product category name:');
+    if (!name) return;
+    try {
+      const token = localStorage.getItem('token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories`, { name, type: 'PRODUCT' }, config);
+      toast.success('Category created');
+      // Refresh categories and preselect the new one
+      await fetchCategories();
+      setFormData(prev => ({ ...prev, categoryId: res.data.data.category.id }));
+    } catch (e) {
+      console.error('Create category error', e);
+      toast.error(e.response?.data?.message || 'Failed to create category');
+    }
+  };
+
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || product.categoryId === selectedCategory;
@@ -305,7 +328,7 @@ const ProductManagement = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      ${(product.price / 100).toFixed(2)}
+                      {new Intl.NumberFormat('en-NP', { style: 'currency', currency: 'NPR', minimumFractionDigits: 0 }).format(product.price)}
                       {product.salePrice && (
                         <div className="text-xs text-green-600">
                           Sale: ${(product.salePrice / 100).toFixed(2)}
@@ -385,6 +408,14 @@ const ProductManagement = () => {
                         <option key={category.id} value={category.id}>{category.name}</option>
                       ))}
                     </select>
+                      <button
+                        type="button"
+                        onClick={handleCreateCategory}
+                        className="mt-2 inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        + Create Category
+                      </button>
+
                   </div>
                 </div>
 
