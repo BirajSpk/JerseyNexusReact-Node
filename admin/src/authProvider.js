@@ -1,5 +1,5 @@
 // Auth provider for JerseyNexus Admin
-const API_URL = 'http://localhost:5001/api';
+const API_URL = 'http://localhost:5003/api';
 
 const authProvider = {
   login: async ({ username, password }) => {

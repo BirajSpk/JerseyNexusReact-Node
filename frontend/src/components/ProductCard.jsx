@@ -37,7 +37,7 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
 
   const handleViewProduct = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    navigate(`/products/${product.slug}`);
+    navigate(`/products/${product.id}`);
   };
 
   const handleToggleWishlist = (e) => {
@@ -71,6 +71,11 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
       : 0;
 
   const productImages = (() => {
+    // Handle new image format (array of image objects)
+    if (product.productImages && Array.isArray(product.productImages)) {
+      return product.productImages;
+    }
+    // Handle legacy format (JSON string) - fallback
     try {
       return product.images ? JSON.parse(product.images) : [];
     } catch {

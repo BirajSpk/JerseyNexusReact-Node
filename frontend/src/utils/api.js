@@ -1,7 +1,7 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5003/api';
 
 // Create axios instance
 const api = axios.create({
@@ -79,6 +79,7 @@ export const productAPI = {
   getProducts: (params) => api.get('/products', { params }),
   getProductById: (id) => api.get(`/products/${id}`),
   getProductBySlug: (slug) => api.get(`/products/slug/${slug}`),
+  searchProducts: (query, params) => api.get(`/products/search?q=${encodeURIComponent(query)}`, { params }),
   createProduct: (data) => api.post('/products', data),
   updateProduct: (id, data) => api.put(`/products/${id}`, data),
   deleteProduct: (id) => api.delete(`/products/${id}`),

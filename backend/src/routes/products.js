@@ -2,6 +2,7 @@ const express = require('express');
 const {
   getProducts,
   getProduct,
+  searchProducts,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -13,6 +14,7 @@ const router = express.Router();
 
 // Public routes
 router.get('/', getProducts);
+router.get('/search', searchProducts);
 router.get('/slug/:slug', getProduct);
 router.get('/:id', getProduct);
 

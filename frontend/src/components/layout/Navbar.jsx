@@ -67,14 +67,14 @@ const Navbar = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
       setShowSuggestions(false);
     }
   };
 
   const handleSuggestionClick = (product) => {
-    navigate(`/products/${product.slug}`);
+    navigate(`/products/${product.id}`);
     setSearchQuery('');
     setShowSuggestions(false);
   };
