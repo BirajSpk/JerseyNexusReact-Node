@@ -1,9 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
 const { asyncHandler, sendResponse, getPagination } = require('../utils/helpers');
 const WebSocketService = require('../utils/websocket');
 const orderService = require('../services/orderService');
-
-const prisma = new PrismaClient();
+const { prisma, executeWithRetry } = require('../config/database');
 
 // @desc    Get user orders
 // @route   GET /api/orders

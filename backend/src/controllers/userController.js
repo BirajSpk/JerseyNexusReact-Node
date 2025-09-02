@@ -1,9 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const { asyncHandler, sendResponse, getPagination } = require('../utils/helpers');
 const WebSocketService = require('../utils/websocket');
-
-const prisma = new PrismaClient();
+const { prisma, executeWithRetry } = require('../config/database');
 
 // @desc    Get all users (Admin only)
 // @route   GET /api/users

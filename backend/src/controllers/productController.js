@@ -1,7 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
 const { asyncHandler, sendResponse, getPagination, generateSlug } = require('../utils/helpers');
-
-const prisma = new PrismaClient();
+const { prisma, executeWithRetry } = require('../config/database');
 
 // @desc    Get all products
 // @route   GET /api/products

@@ -1,11 +1,9 @@
-const { PrismaClient } = require('@prisma/client');
 const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const { asyncHandler, sendResponse } = require('../utils/helpers');
 const WebSocketService = require('../utils/websocket');
 const paymentService = require('../services/paymentService');
-
-const prisma = new PrismaClient();
+const { prisma, executeWithRetry } = require('../config/database');
 
 // Khalti Configuration
 const KHALTI_LIVE_PUBLIC_KEY = process.env.KHALTI_LIVE_PUBLIC_KEY 
@@ -57,7 +55,7 @@ const initiateKhaltiPayment = asyncHandler(async (req, res) => {
 
   try {
     const payload = {
-      return_url: process.env.KHALTI_RETURN_URL || 'http://localhost:5001/api/payments/khalti/callback-new',
+      return_url: process.env.KHALTI_RETURN_URL || 'http://localhost:5003/api/payments/khalti/callback-new',
       website_url: process.env.FRONTEND_URL || "http://localhost:3000",
       amount: Math.round(order.totalAmount * 100), // Convert to paisa (smallest currency unit)
       purchase_order_id: purchaseOrderId,

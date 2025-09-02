@@ -1,9 +1,7 @@
 const bcrypt = require('bcryptjs');
-const { PrismaClient } = require('@prisma/client');
 const { generateToken } = require('../utils/auth');
 const { asyncHandler, sendResponse, generateSlug } = require('../utils/helpers');
-
-const prisma = new PrismaClient();
+const { prisma, executeWithRetry } = require('../config/database');
 
 // @desc    Register user
 // @route   POST /api/auth/register

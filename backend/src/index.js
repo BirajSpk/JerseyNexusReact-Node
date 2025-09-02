@@ -8,10 +8,10 @@ const http = require('http');
 const WebSocketService = require('./utils/websocket');
 const DatabaseChecker = require('./utils/dbCheck');
 require('dotenv').config();
-const prisma = require("../src/config/database.js") 
-const {seedDummyData} = require('../prisma/dummydata.js');
+const { prisma, connectWithRetry } = require("../src/config/database.js")
 
-prisma.$connect();
+// Initialize database connection with retry logic
+connectWithRetry().catch(console.error);
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -65,6 +65,8 @@ app.use(compression());
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
+
+prisma.$connect();
 
 // Static files
 app.use('/uploads', express.static('uploads'));
