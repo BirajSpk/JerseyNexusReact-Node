@@ -30,7 +30,10 @@ const app = express();
 const server = http.createServer(app);
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  // Allow images and other static assets to be loaded from a different origin (e.g., Vite dev server)
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 
 // CORS configuration
 app.use(cors({
@@ -142,36 +145,68 @@ app.get('/', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5001;
+const DEFAULT_PORT = Number(process.env.PORT) || 5003;
+
+// Try to listen on a port; if EADDRINUSE, increment and retry up to maxAttempts
+async function listenWithFallback(startPort, maxAttempts = 10) {
+  return new Promise((resolve, reject) => {
+    let attempt = 0;
+    const tryListen = (port) => {
+      attempt++;
+      const onError = (err) => {
+        if (err.code === 'EADDRINUSE' && attempt < maxAttempts) {
+          console.error(`❌ Port ${port} is already in use. Trying ${port + 1}...`);
+          setTimeout(() => tryListen(port + 1), 150);
+        } else {
+          reject(err);
+        }
+      };
+      server.once('error', onError);
+      server.listen(port, () => {
+        server.off('error', onError);
+        resolve(port);
+      });
+    };
+    tryListen(startPort);
+  });
+}
 
 // Database startup check
 async function startServer() {
   const dbChecker = new DatabaseChecker();
-  
+
   try {
     // Run database check on startup
     const dbResult = await dbChecker.runFullCheck();
-    
+
     if (!dbResult.success) {
       console.log('⚠️  Warning: Database issues detected but server will continue...');
     }
-    
+
     await dbChecker.disconnect();
   } catch (error) {
     console.error('❌ Database check failed on startup:', error.message);
     console.log('⚠️  Warning: Continuing without database verification...');
   }
 
-  server.listen(PORT, () => {
-    console.log(`🚀 JerseyNexus API running on port ${PORT}`);
+  try {
+    const port = await listenWithFallback(DEFAULT_PORT, 15);
+    console.log(`🚀 JerseyNexus API running on port ${port}`);
     console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🌐 Health check: http://localhost:${PORT}/health`);
-    console.log(`🗄️  Database check: http://localhost:${PORT}/health/database`);
+    console.log(`🌐 Health check: http://localhost:${port}/health`);
+    console.log(`🗄️  Database check: http://localhost:${port}/health/database`);
     console.log(`🔌 WebSocket server ready`);
-  });
 
-  // Initialize WebSocket service
-  WebSocketService.initialize(server);
+    // Initialize WebSocket service once server is listening
+    WebSocketService.initialize(server);
+  } catch (err) {
+    if (err && err.code === 'EADDRINUSE') {
+      console.error(`❌ All attempted ports are in use starting from ${DEFAULT_PORT}. Try another port or free the port.`);
+    } else {
+      console.error('❌ Failed to start server:', err);
+    }
+    process.exit(1);
+  }
 }
 
 

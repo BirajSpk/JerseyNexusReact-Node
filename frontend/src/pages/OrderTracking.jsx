@@ -124,7 +124,12 @@ const OrderTracking = () => {
   };
 
   const formatCurrency = (amount) => {
-    return `$${(amount / 100).toFixed(2)}`;
+    return new Intl.NumberFormat('en-NP', {
+      style: 'currency',
+      currency: 'NPR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
   };
 
   const formatDate = (dateString) => {

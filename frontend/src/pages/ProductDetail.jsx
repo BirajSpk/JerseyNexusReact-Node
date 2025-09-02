@@ -22,6 +22,7 @@ import { productAPI } from '../utils/api';
 import BackButton from '../components/ui/BackButton';
 import RelatedProducts from '../components/RelatedProducts';
 import ImageZoom from '../components/ImageZoom';
+import { getImageUrl } from '../utils/helpers';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -64,7 +65,7 @@ const ProductDetail = () => {
           if (productData.productImages && Array.isArray(productData.productImages) && productData.productImages.length > 0) {
             // Images are now an array of image objects from ProductImage table
             processedImages = productData.productImages.map(image => ({
-              url: image.url,
+              url: getImageUrl(image.url),
               altText: image.altText || productData.name || 'Product Image'
             }));
           } else {

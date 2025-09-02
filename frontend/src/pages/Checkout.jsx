@@ -80,51 +80,70 @@ const Checkout = () => {
           postalCode: data.postalCode || '44600'
         },
         paymentMethod,
-        shippingCost
+        shippingCost,
+        totalAmount: finalTotal
       };
 
-      const response = await orderAPI.createOrder(orderData);
+      // For COD, create order immediately since no payment gateway is involved
+      if (paymentMethod === 'cod') {
+        const response = await orderAPI.createOrder(orderData);
+        if (response.data.success) {
+          const order = response.data.data.order;
+          if (!location.state?.items) dispatch(clearCart());
 
-      if (response.data.success) {
-        const order = response.data.data.order;
-        if (!location.state?.items) dispatch(clearCart());
-        toast.success('Order placed successfully!');
-
-        if (paymentMethod === 'cod') {
           const codResponse = await paymentAPI.processCOD({ orderId: order.id });
           if (codResponse.data.success) {
             toast.success('COD order confirmed! You will pay on delivery.');
             navigate('/order-success', { state: { order, paymentMethod: 'cod' } });
           }
-        } else if (paymentMethod === 'khalti') {
-          const khaltiResponse = await paymentAPI.initiateKhalti({
-            orderId: order.id,
+        }
+      } else {
+        // For online payments, initiate payment first without creating order
+        if (paymentMethod === 'khalti') {
+          const khaltiResponse = await paymentAPI.initiateKhaltiWithOrderData({
+            orderData,
             amount: finalTotal * 100,
-            productName: `Order #${order.id.slice(-8)}`,
+            productName: `JerseyNexus Order`,
             logo: 'https://avatars.githubusercontent.com/u/31564639?s=280&v=4'
           });
           if (khaltiResponse.data.success) {
+            // Store order data in session storage for after payment
+            sessionStorage.setItem('pendingOrderData', JSON.stringify(orderData));
+            if (!location.state?.items) dispatch(clearCart());
+
             toast.success('🚀 Redirecting to Khalti Payment...');
             setTimeout(() => {
               window.location.href = khaltiResponse.data.data.payment_url;
             }, 1500);
           }
         } else if (paymentMethod === 'esewa') {
-          const esewaResponse = await paymentAPI.initiateEsewa({
-            orderId: order.id,
+          const esewaResponse = await paymentAPI.initiateEsewaWithOrderData({
+            orderData,
             amount: finalTotal,
-            productName: `Order #${order.id.slice(-8)}`,
+            productName: `JerseyNexus Order`,
             logo: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQVCKHYQMq3XBec5WFf_0wPwC_kaNhqxmaVhg&s'
           });
           if (esewaResponse.data.success) {
+            // Store order data in session storage for after payment
+            sessionStorage.setItem('pendingOrderData', JSON.stringify(orderData));
+            if (!location.state?.items) dispatch(clearCart());
+
             toast.success('🚀 Redirecting to eSewa Payment...');
-            setTimeout(() => {
-              window.location.href = esewaResponse.data.data.payment_url;
-            }, 1500);
+            const { payment_url, esewaParams } = esewaResponse.data.data;
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = payment_url;
+            Object.entries(esewaParams).forEach(([key, value]) => {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = key;
+              input.value = value;
+              form.appendChild(input);
+            });
+            document.body.appendChild(form);
+            form.submit();
           }
         }
-      } else {
-        throw new Error(response.data.message || 'Failed to create order');
       }
     } catch (error) {
       console.error('Order creation error:', error);

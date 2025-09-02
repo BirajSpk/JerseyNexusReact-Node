@@ -294,7 +294,7 @@ const Cart = () => {
               {[1, 2].map((_, index) => (
                 <div key={index} className="flex items-center space-x-3 p-2 hover:bg-neutral/50 rounded-lg transition-colors cursor-pointer">
                   <img
-                    src={`https://via.placeholder.com/60x60?text=Item+${index + 1}`}
+                    src={`data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='#f3f4f6'/><text x='30' y='35' font-size='10' fill='#9ca3af' text-anchor='middle'>Item ${index + 1}</text></svg>`)}`}
                     alt={`Recommended item ${index + 1}`}
                     className="w-12 h-12 object-cover rounded border border-gray-200"
                   />

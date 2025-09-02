@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from '../utils/motion';
 import { ArrowRight, Calendar, User } from './ui/ProfessionalIcon';
 import { blogAPI } from '../utils/api';
+import { getImageUrl } from '../utils/helpers';
 
 const FeaturedBlogs = () => {
   const [blogs, setBlogs] = useState([]);
@@ -125,13 +126,12 @@ const FeaturedBlogs = () => {
             >
               <div className="relative overflow-hidden">
                 <img
-                  src={blog.featuredImage || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI1MCIgdmlld0JveD0iMCAwIDQwMCAyNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIyNTAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSIyMDAiIHk9IjEzMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5CbG9nIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
+                  src={getImageUrl(blog.featuredImage) || 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250"><rect width="400" height="250" fill="#f3f4f6"/><text x="200" y="130" fill="#9ca3af" text-anchor="middle">Blog Image</text></svg>')}
                   alt={blog.title}
                   className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   onError={(e) => {
-                    // Prevent infinite loop by checking if we're already showing the fallback
                     if (!e.target.src.includes('data:image')) {
-                      e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI1MCIgdmlld0JveD0iMCAwIDQwMCAyNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMjUwIiBmaWxsPSIjRjNGNEY2Ii8+CjxyZWN0IHg9IjE1MCIgeT0iMTAwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjOUNBM0FGIi8+Cjx0ZXh0IHg9IjIwMCIgeT0iMTMwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5CbG9nIEltYWdlPC90ZXh0Pgo8L3N2Zz4K';
+                      e.target.src = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="250"><rect width="400" height="250" fill="#f3f4f6"/><text x="200" y="130" fill="#9ca3af" text-anchor="middle">Blog Image</text></svg>');
                     }
                   }}
                 />

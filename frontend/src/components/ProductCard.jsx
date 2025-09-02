@@ -5,6 +5,7 @@ import { Star, ShoppingCart, Heart, Eye, Zap } from './ui/ProfessionalIcon';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '../store/slices/cartSlice';
 import { addToWishlist, removeFromWishlist } from '../store/slices/wishlistSlice';
+import { getImageUrl } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
@@ -71,16 +72,28 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
       : 0;
 
   const productImages = (() => {
-    // Handle new image format (array of image objects)
+    // New format from API: productImages table
     if (product.productImages && Array.isArray(product.productImages)) {
       return product.productImages;
     }
-    // Handle legacy format (JSON string) - fallback
-    try {
-      return product.images ? JSON.parse(product.images) : [];
-    } catch {
-      return [];
+    // Already normalized array (e.g., FeaturedProducts processed props)
+    if (Array.isArray(product.images)) {
+      return product.images;
     }
+    // Legacy JSON string
+    if (typeof product.images === 'string') {
+      try {
+        const parsed = JSON.parse(product.images);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        // ignore
+      }
+    }
+    // Fallback single image field
+    if (product.image) {
+      return [{ url: product.image }];
+    }
+    return [];
   })();
 
   const fallbackImage =
@@ -99,16 +112,26 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
     >
       {/* Image */}
       <div
-        className={`relative overflow-hidden ${
+        className={`relative overflow-hidden group ${
           viewMode === 'list' ? 'w-48 h-48 flex-shrink-0' : 'aspect-square w-full'
         }`}
       >
+        {/* Front image */}
         <img
-          src={productImages[0]?.url || fallbackImage}
+          src={getImageUrl(productImages[0]?.url) || fallbackImage}
           alt={productImages[0]?.altText || product.name}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-0"
           loading="lazy"
         />
+        {/* Back image (on hover) */}
+        {productImages[1]?.url && (
+          <img
+            src={getImageUrl(productImages[1]?.url)}
+            alt={productImages[1]?.altText || `${product.name} back`}
+            className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            loading="lazy"
+          />
+        )}
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col space-y-2 z-10">
@@ -139,7 +162,7 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
         </div>
 
         {/* Quick Actions */}
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center space-x-3">
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center space-x-3">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}

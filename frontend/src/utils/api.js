@@ -111,6 +111,9 @@ export const paymentAPI = {
   initiateEsewa: (data) => api.post('/payments/esewa/initiate', data),
   verifyEsewa: (data) => api.post('/payments/esewa/verify', data),
   processCOD: (data) => api.post('/payments/cod/process', data),
+  // New methods for payment with order data (no pre-created order)
+  initiateKhaltiWithOrderData: (data) => api.post('/payments/khalti/initiate-with-order', data),
+  initiateEsewaWithOrderData: (data) => api.post('/payments/esewa/initiate-with-order', data),
 };
 
 export const uploadAPI = {

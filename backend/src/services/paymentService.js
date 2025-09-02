@@ -5,24 +5,87 @@ class PaymentService {
   // Create a new payment record
   async createPayment(paymentData) {
     try {
-      const payment = await prisma.payment.create({
-        data: {
-          orderId: paymentData.orderId,
-          amount: paymentData.amount,
-          currency: paymentData.currency || 'NPR',
-          method: paymentData.method,
-          status: 'PENDING',
-          externalId: paymentData.externalId,
-          transactionId: paymentData.transactionId,
-          referenceId: paymentData.referenceId,
-          metadata: paymentData.metadata || {},
-          initiatedAt: new Date()
-        },
-        include: {
-          order: true
-        }
-      });
+      let orderId = paymentData.orderId || null;
 
+      // If no orderId is provided, create a new order from metadata.orderData
+      if (!orderId && paymentData.metadata?.orderData) {
+        let { orderData, userId } = paymentData.metadata;
+        if (typeof orderData === 'string') {
+          try {
+            orderData = JSON.parse(orderData);
+          } catch (e) {
+            throw new Error('Invalid orderData JSON in payment metadata');
+          }
+        }
+        if (!userId) {
+          throw new Error('Missing userId in payment metadata');
+        }
+        if (!orderData?.items?.length) {
+          throw new Error('No items found to create order');
+        }
+
+        // Fetch product prices in one query
+        const productIds = orderData.items.map((it) => it.productId);
+        const products = await prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true, price: true }
+        });
+        const priceMap = new Map(products.map(p => [p.id, p.price]));
+
+        // Build order items with current prices
+        const orderItems = orderData.items.map((item) => {
+          const price = priceMap.get(item.productId);
+          if (price == null) {
+            throw new Error(`Product ${item.productId} not found`);
+          }
+          return {
+            productId: item.productId,
+            quantity: item.quantity,
+            price,
+            size: item.size || null,
+            color: item.color || null
+          };
+        });
+
+        // Compute totals
+        const subtotal = orderItems.reduce((sum, it) => sum + it.price * it.quantity, 0);
+        const shippingCost = orderData.shippingCost || 0;
+        const discountAmount = orderData.discountAmount || 0;
+        const totalAmount = subtotal + shippingCost - discountAmount;
+
+        const createdOrder = await prisma.order.create({
+          data: {
+            userId,
+            totalAmount,
+            shippingCost,
+            discountAmount,
+            status: 'PENDING',
+            paymentMethod: paymentData.method || 'COD',
+            paymentStatus: 'PENDING',
+            shippingAddress: typeof orderData.shippingAddress === 'string'
+              ? orderData.shippingAddress
+              : JSON.stringify(orderData.shippingAddress || {}),
+            notes: orderData.notes,
+            items: { create: orderItems }
+          }
+        });
+        orderId = createdOrder.id;
+      }
+
+      const data = {
+        amount: paymentData.amount,
+        currency: paymentData.currency || 'NPR',
+        method: paymentData.method,
+        status: 'PENDING',
+        externalId: paymentData.externalId || null,
+        transactionId: paymentData.transactionId || null,
+        referenceId: paymentData.referenceId || null,
+        metadata: paymentData.metadata || {},
+        initiatedAt: new Date(),
+        orderId
+      };
+
+      const payment = await prisma.payment.create({ data });
       return payment;
     } catch (error) {
       console.error('Error creating payment:', error);
