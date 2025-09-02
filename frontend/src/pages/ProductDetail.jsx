@@ -24,7 +24,8 @@ import RelatedProducts from '../components/RelatedProducts';
 import ImageZoom from '../components/ImageZoom';
 
 const ProductDetail = () => {
-  const { slug } = useParams();
+  const { id } = useParams();
+  console.log(`The id of the product is ${id}`)
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
@@ -42,41 +43,45 @@ const ProductDetail = () => {
 
   useEffect(() => {
     const fetchProduct = async () => {
-      if (!slug) return;
+      if (!id) return;
 
       setLoading(true);
       try {
-        const response = await productAPI.getProductBySlug(slug);
-
+        const response = await productAPI.getProductById(id);
+          console.log("the rsponse is " , response)
         if (response.data.success) {
           const productData = response.data.data.product;
-
+              console.log("The product data is " , productData);
           // Check if product data is empty or null
           if (!productData || Object.keys(productData).length === 0) {
             throw new Error('Product not found');
           }
 
           // Process images - handle both string arrays and object arrays
-          console.log('Raw product images:', productData.images);
+          console.log('Raw product images:', productData.productImages);
           let processedImages = [];
 
-          if (productData.images) {
-            // Backend contains single image URL as string
-            const imageUrl = productData.images;
-            const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001'}${imageUrl}`;
-
+          if (productData.productImages && Array.isArray(productData.productImages) && productData.productImages.length > 0) {
+            // Images are now an array of image objects from ProductImage table
+            processedImages = productData.productImages.map(image => ({
+              url: image.url,
+              altText: image.altText || productData.name || 'Product Image'
+            }));
+          } else {
+            // Fallback to placeholder if no images
             processedImages = [{
-              url: fullImageUrl,
-              altText: productData.name || 'Product Image'
+              url: '/placeholder-product.jpg',
+              altText: 'Product Image'
             }];
           }
-
 
           setProcessedImages(processedImages);
 
 
 
-          console.log('Processed images:', processedImages[0].url);
+
+
+          console.log('Processed images:', processedImages);
 
           // Process sizes - handle both string arrays and object arrays
           let processedSizes = [];
@@ -128,7 +133,7 @@ const ProductDetail = () => {
     };
 
     fetchProduct();
-  }, [slug]);
+  }, [id]);
 
   const handleAddToCart = () => {
     // Check if product has sizes and none is selected

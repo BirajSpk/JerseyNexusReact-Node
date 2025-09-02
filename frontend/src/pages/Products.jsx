@@ -26,6 +26,7 @@ const Products = () => {
 
   const [sortBy, setSortBy] = useState('name');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [priceRange, setPriceRange] = useState([0, 10000]);
   const [selectedBrands, setSelectedBrands] = useState([]);
   
@@ -43,14 +44,27 @@ const Products = () => {
         setLoading(true);
 
         // Fetch products and categories in parallel
-        const [productsResponse, categoriesResponse] = await Promise.all([
-          productAPI.getProducts({
+        let productsResponse;
+
+        if (searchQuery.trim()) {
+          // Use search API if there's a search query
+          productsResponse = await productAPI.searchProducts(searchQuery, {
+            page: 1,
+            limit: 50,
+            categoryId: selectedCategory,
+            sortBy,
+            sortOrder: 'desc'
+          });
+        } else {
+          // Use regular products API
+          productsResponse = await productAPI.getProducts({
             page: 1,
             limit: 50,
             category: selectedCategory
-          }),
-          categoryAPI.getProductCategories()
-        ]);
+          });
+        }
+
+        const categoriesResponse = await categoryAPI.getProductCategories();
 
         if (productsResponse.data.success) {
           setProducts(productsResponse.data.data.products || []);
@@ -72,7 +86,15 @@ const Products = () => {
     };
 
     fetchData();
-  }, [selectedCategory]);
+  }, [selectedCategory, searchQuery, sortBy]);
+
+  // Update search query when URL params change
+  useEffect(() => {
+    const urlSearchQuery = searchParams.get('q') || '';
+    if (urlSearchQuery !== searchQuery) {
+      setSearchQuery(urlSearchQuery);
+    }
+  }, [searchParams]);
 
   // Filter products
   const filteredProducts = useMemo(() => {
@@ -171,9 +193,14 @@ const Products = () => {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-3xl font-bold text-dark mb-4">Products</h1>
+        <h1 className="text-3xl font-bold text-dark mb-4">
+          {searchQuery ? `Search Results for "${searchQuery}"` : 'Products'}
+        </h1>
         <p className="text-muted max-w-2xl">
-          Discover our extensive collection of authentic sportswear and jerseys from top teams around the world.
+          {searchQuery
+            ? `Found ${products.length} products matching your search.`
+            : 'Discover our extensive collection of authentic sportswear and jerseys from top teams around the world.'
+          }
         </p>
       </motion.div>
 

@@ -1,7 +1,7 @@
 // Simple data provider for JerseyNexus Admin
 // In production, this would connect to your actual API
 
-const API_URL = 'http://localhost:5001/api';
+const API_URL = 'http://localhost:5003/api';
 
 const dataProvider = {
   getList: async (resource, params) => {

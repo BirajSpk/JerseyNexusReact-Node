@@ -75,7 +75,7 @@ async function main() {
         metaTitle: 'Arsenal Home Jersey 2025/26 - Official | JerseyNexus',
         metaDescription: 'Buy the official Arsenal home jersey 2025/26 season at JerseyNexus. Premium quality, authentic design with fast delivery across Nepal.',
         categoryId: footballCategory.id,
-        imageFile: 'Arsanel jersey 2526 home.png',
+        imageFile: 'https://i8.amplience.net/t/jpl/jd_product_list?plu=jd_757411_al&qlt=85&qlt=92&w=320&h=320&v=1&fmt=auto',
       },
       {
         name: 'Arsenal Away Jersey 2025/26',
@@ -86,7 +86,7 @@ async function main() {
         metaTitle: 'Arsenal Away Jersey 2025/26 - Official | JerseyNexus',
         metaDescription: 'Shop the official Arsenal away jersey 2025/26 at JerseyNexus. Authentic away kit with premium materials.',
         categoryId: footballCategory.id,
-        imageFile: 'Arsanel jersey 2526 away.png',
+        imageFile: 'https://www.weston.com.sg/cdn/shop/products/arsenal2223third_1024x1024.jpg?v=1660636798',
       },
       {
         name: 'Barcelona Home Jersey 2025/26',
@@ -97,7 +97,7 @@ async function main() {
         metaTitle: 'Barcelona Home Jersey 2025/26 - Official | JerseyNexus',
         metaDescription: 'Get the official Barcelona home jersey 2025/26 at JerseyNexus. Iconic blaugrana colors with premium quality.',
         categoryId: footballCategory.id,
-        imageFile: 'Barcelona jersey 2526 home.jpeg',
+        imageFile: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmqkhgkbGARQjIsuEeCr_ZMXX32qtb87E9dQ&s',
       },
       {
         name: 'Barcelona Away Jersey 2025/26',
@@ -108,7 +108,7 @@ async function main() {
         metaTitle: 'Barcelona Away Jersey 2025/26 - Official | JerseyNexus',
         metaDescription: 'Buy the official Barcelona away jersey 2025/26 at JerseyNexus. Stunning design with authentic club details.',
         categoryId: footballCategory.id,
-        imageFile: 'Barcelone jersey 2526 away.jpeg',
+        imageFile: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTCYkDnxmYWWrDz3a2L4sDA4TQsvH2byuFPyg&s',
       },
       {
         name: 'Chelsea Home Jersey 2025/26',
@@ -119,7 +119,7 @@ async function main() {
         metaTitle: 'Chelsea Home Jersey 2025/26 - Official | JerseyNexus',
         metaDescription: 'Shop the official Chelsea home jersey 2025/26 at JerseyNexus. Classic blue design with premium quality.',
         categoryId: footballCategory.id,
-        imageFile: 'Chelsea jersey 2526 home.jpeg',
+        imageFile: 'https://i8.amplience.net/t/jpl/jdie_product_list?plu=jd_752503_al&qlt=85&qlt=92&w=320&h=320&v=1&fmt=auto',
       },
       {
         name: 'Chelsea Away Jersey 2025/26',
@@ -130,7 +130,7 @@ async function main() {
         metaTitle: 'Chelsea Away Jersey 2025/26 - Official | JerseyNexus',
         metaDescription: 'Get the official Chelsea away jersey 2025/26 at JerseyNexus. Modern design with authentic club details.',
         categoryId: footballCategory.id,
-        imageFile: 'Chelsea jersey 2526 away.jpeg',
+        imageFile: 'https://images.footballfanatics.com/chelsea/chelsea-nike-third-stadium-shirt-2025-26_ss5_p-202697101+u-0f6is3ofu5bbvtvuwxk2+v-9ly4ehkegjtghwgjtwc4.jpg?_hv=2&w=532',
       },
       {
         name: 'Manchester United Home Jersey 2025/26',
@@ -141,7 +141,7 @@ async function main() {
         metaTitle: 'Manchester United Home Jersey 2025/26 - Official | JerseyNexus',
         metaDescription: 'Buy the official Manchester United home jersey 2025/26 at JerseyNexus. Classic red design with premium materials.',
         categoryId: footballCategory.id,
-        imageFile: 'Manchester United Home 2526.jpg',
+        imageFile: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ_UqaGYJxrO8QbidFsuB8nfMnx0xd4mLvXdg&s',
       },
       {
         name: 'Manchester United Away Jersey 2025/26',
@@ -152,7 +152,7 @@ async function main() {
         metaTitle: 'Manchester United Away Jersey 2025/26 - Official | JerseyNexus',
         metaDescription: 'Shop the official Manchester United away jersey 2025/26 at JerseyNexus. Premium away kit with authentic design.',
         categoryId: footballCategory.id,
-        imageFile: 'Manchester United Away Jersey 2526.jpg',
+        imageFile: 'https://mufc-live.cdn.scayle.cloud/images/aa2413dd8b977c866c32f238f6fc93ec.jpg?brightness=1&width=922&height=1230&quality=70&bg=ffffff',
       },
       {
         name: 'PSG Home Jersey 2025/26',
@@ -163,7 +163,7 @@ async function main() {
         metaTitle: 'PSG Home Jersey 2025/26 - Official | JerseyNexus',
         metaDescription: 'Get the official PSG home jersey 2025/26 at JerseyNexus. Classic navy design with premium quality.',
         categoryId: footballCategory.id,
-        imageFile: 'PSG jersey 2526 home.png',
+        imageFile: 'https://footballmonk.in/wp-content/uploads/2024/10/PSG-Home-Kit-24-25-2.jpg',
       },
       {
         name: 'PSG Away Jersey 2025/26',
@@ -174,7 +174,7 @@ async function main() {
         metaTitle: 'PSG Away Jersey 2025/26 - Official | JerseyNexus',
         metaDescription: 'Buy the official PSG away jersey 2025/26 at JerseyNexus. Elegant away design with authentic details.',
         categoryId: footballCategory.id,
-        imageFile: 'PSG jersey 2526 away.png',
+        imageFile: 'https://cdn.shoplightspeed.com/shops/611228/files/59346416/nike-psg-23-24-away-jersey-white.jpg',
       },
       {
         name: 'Real Madrid Home Jersey 2025/26',
@@ -185,7 +185,7 @@ async function main() {
         metaTitle: 'Real Madrid Home Jersey 2025/26 - Official | JerseyNexus',
         metaDescription: 'Shop the official Real Madrid home jersey 2025/26 at JerseyNexus. Iconic white design with premium quality.',
         categoryId: footballCategory.id,
-        imageFile: 'Real Madrid jersey 2526 home.jpeg',
+        imageFile: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRMJExV2ahyjnFjM_6LY9h4SZkzmaT05yk4BA&s',
       },
       {
         name: 'Real Madrid Away Jersey 2025/26',
@@ -196,7 +196,7 @@ async function main() {
         metaTitle: 'Real Madrid Away Jersey 2025/26 - Official | JerseyNexus',
         metaDescription: 'Get the official Real Madrid away jersey 2025/26 at JerseyNexus. Premium away kit with authentic design.',
         categoryId: footballCategory.id,
-        imageFile: 'Real Madrid jersey 2526 away.jpeg',
+        imageFile: 'https://assets.adidas.com/images/w_600,f_auto,q_auto/1b5fe3d92d19419ea0907d662adc9bc5_9366/Real_Madrid_23-24_Away_Jersey_Blue_IJ5901_HM1.jpg',
       },
     ];
 
@@ -222,7 +222,7 @@ async function main() {
       const existingImage = await prisma.productImage.findFirst({
         where: {
           productId: product.id,
-          url: `/uploads/${productData.imageFile}`
+          url: productData.imageFile
         }
       });
 
@@ -230,7 +230,7 @@ async function main() {
         await prisma.productImage.create({
           data: {
             productId: product.id,
-            url: `/uploads/${productData.imageFile}`,
+            url: productData.imageFile,
             altText: productData.name,
             isPrimary: true,
             sortOrder: 1,
