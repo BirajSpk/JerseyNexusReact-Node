@@ -4,7 +4,7 @@
   "description": "JerseyNexus backend API",
   "main": "index.js",
   "scripts": {
-    "start": "node dist/index.js",
+    "start": "nodemon node src/index.js",
     "dev": "nodemon src/index.js",
     "build": "babel src -d dist",
     "test": "jest --watchAll=false",

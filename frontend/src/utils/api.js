@@ -110,10 +110,14 @@ export const paymentAPI = {
   verifyKhalti: (data) => api.post('/payments/khalti/verify', data),
   initiateEsewa: (data) => api.post('/payments/esewa/initiate', data),
   verifyEsewa: (data) => api.post('/payments/esewa/verify', data),
+  checkEsewaStatus: (transactionUuid) => api.get(`/payments/esewa/status/${transactionUuid}`),
   processCOD: (data) => api.post('/payments/cod/process', data),
   // New methods for payment with order data (no pre-created order)
   initiateKhaltiWithOrderData: (data) => api.post('/payments/khalti/initiate-with-order', data),
   initiateEsewaWithOrderData: (data) => api.post('/payments/esewa/initiate-with-order', data),
+  // Khalti KPG-2 methods
+  initiateKhaltiV2: (data) => api.post('/payments/khalti/initiate-v2', data),
+  verifyKhaltiV2: (data) => api.post('/payments/khalti/verify-v2', data),
 };
 
 export const uploadAPI = {

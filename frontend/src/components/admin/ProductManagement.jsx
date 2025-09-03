@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ImageUpload from './ImageUpload';
 import toast from 'react-hot-toast';
 import { productAPI, categoryAPI } from '../../utils/api';
+import axios from 'axios';
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
@@ -153,7 +154,7 @@ const ProductManagement = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/products/${productId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/products/${productId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchProducts();
@@ -168,7 +169,7 @@ const ProductManagement = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/products/${productId}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/products/${productId}`,
         { featured: !currentFeatured },
         { headers: { Authorization: `Bearer ${token}` } }
       );

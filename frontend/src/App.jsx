@@ -33,6 +33,11 @@ import OrderTracking from './pages/OrderTracking';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailed from './pages/PaymentFailed';
 import KhaltiCallback from './pages/KhaltiCallback';
+import EsewaTest from './pages/EsewaTest';
+import EsewaSuccess from './pages/EsewaSuccess';
+import EsewaFailed from './pages/EsewaFailed';
+import KhaltiSuccess from './pages/KhaltiSuccess';
+import KhaltiFailed from './pages/KhaltiFailed';
 
 function App() {
   const location = useLocation();
@@ -62,6 +67,11 @@ function App() {
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/failed" element={<PaymentFailed />} />
             <Route path="/khalti/callback" element={<KhaltiCallback />} />
+            <Route path="/payment/khalti/success" element={<KhaltiSuccess />} />
+            <Route path="/payment/khalti/failed" element={<KhaltiFailed />} />
+            <Route path="/payment/esewa/success" element={<EsewaSuccess />} />
+            <Route path="/payment/esewa/failed" element={<EsewaFailed />} />
+            <Route path="/test/esewa" element={<EsewaTest />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

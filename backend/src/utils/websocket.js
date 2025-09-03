@@ -14,8 +14,11 @@ class WebSocketService {
     this.io = new Server(server, {
       cors: {
         origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
-        methods: ['GET', 'POST']
-      }
+        methods: ['GET', 'POST'],
+        credentials: true
+      },
+      allowEIO3: true,
+      transports: ['websocket', 'polling']
     });
 
     // Authentication middleware for socket connections

@@ -61,7 +61,7 @@ const OrderTracking = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/orders/${orderId}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/orders/${orderId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setOrder(response.data.data.order);
