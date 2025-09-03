@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { orderAPI } from '../../utils/api';
 
 const RecentOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -11,10 +11,7 @@ const RecentOrders = () => {
 
   const fetchRecentOrders = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/orders?limit=5`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await orderAPI.getOrders({ limit: 5 });
       setOrders(response.data.data.orders || []);
     } catch (error) {
       console.error('Error fetching recent orders:', error);

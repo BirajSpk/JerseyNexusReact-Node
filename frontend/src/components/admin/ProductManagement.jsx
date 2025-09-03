@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import ImageUpload from './ImageUpload';
 import toast from 'react-hot-toast';
+import { productAPI, categoryAPI } from '../../utils/api';
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
@@ -32,11 +32,7 @@ const ProductManagement = () => {
 
   const fetchProducts = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/products`, config);
+      const response = await productAPI.getProducts();
       setProducts(response.data.data?.products || response.data.data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -98,10 +94,10 @@ const ProductManagement = () => {
       };
 
       if (editingProduct) {
-        await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/products/${editingProduct.id}`, submitData, config);
+        await productAPI.updateProduct(editingProduct.id, submitData);
         toast.success('Product updated successfully!');
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/products`, submitData, config);
+        await productAPI.createProduct(submitData);
         toast.success('Product created successfully!');
       }
 

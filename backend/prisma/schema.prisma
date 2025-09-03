@@ -18,7 +18,8 @@ model User {
   avatar    String?
   phone     String?
   address   String?   // JSON string: {street, city, state, postalCode, country}
-  role      String   @default("USER")
+  role      String   @default("USER") // USER, ADMIN
+  status    String   @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -31,12 +32,13 @@ model User {
 }
 
 model Category {
-  id        String       @id @default(cuid())
-  name      String
-  slug      String       @unique
-  type      String       @default("PRODUCT")
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  type        String       @default("PRODUCT") // PRODUCT, BLOG
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   // Relations
   products Product[]
@@ -204,15 +206,16 @@ model Blog {
   categoryId String
   authorId   String
   published  Boolean @default(false)
-  
+  status     String  @default("DRAFT") // DRAFT, PUBLISHED
+
   // SEO Fields
   metaTitle       String?
   metaDescription String?
   slug            String  @unique
-  
+
   // Images as simple text field (JSON string)
   images String? // JSON string of array: [{url: string, altText: string, isPrimary: boolean}]
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -1,7 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
 const { asyncHandler, sendResponse, generateSlug } = require('../utils/helpers');
-
-const prisma = new PrismaClient();
+const { prisma, executeWithRetry } = require('../config/database');
 
 // @desc    Get all blogs
 // @route   GET /api/blogs
@@ -53,13 +51,22 @@ const getBlog = asyncHandler(async (req, res) => {
 // @route   POST /api/blogs
 // @access  Private/Admin
 const createBlog = asyncHandler(async (req, res) => {
-  const { title, content, categoryId, published = false } = req.body;
+  const { title, content, categoryId, published = false, status = 'DRAFT', imageUrl } = req.body;
   const authorId = req.user.id;
-  
+
   const slug = generateSlug(title);
-  
+
   const blog = await prisma.blog.create({
-    data: { title, content, categoryId, authorId, slug, published },
+    data: {
+      title,
+      content,
+      categoryId,
+      authorId,
+      slug,
+      published,
+      status: published ? 'PUBLISHED' : status,
+      images: imageUrl ? JSON.stringify([{ url: imageUrl, altText: title, isPrimary: true }]) : null
+    },
     include: { category: true, author: { select: { name: true } } }
   });
 
@@ -71,10 +78,16 @@ const createBlog = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const updateBlog = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+  const { imageUrl, ...rest } = req.body;
+
+  const data = { ...rest };
+  if (imageUrl) {
+    data.images = JSON.stringify([{ url: imageUrl, altText: rest.title || 'Blog Image', isPrimary: true }]);
+  }
+
   const blog = await prisma.blog.update({
     where: { id },
-    data: req.body,
+    data,
     include: { category: true, author: { select: { name: true } } }
   });
 
