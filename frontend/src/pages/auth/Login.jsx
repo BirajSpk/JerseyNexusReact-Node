@@ -7,6 +7,7 @@ import { useForm } from '../../utils/forms'; // Temporary form wrapper
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
 import { setLoading, setError, loginSuccess, clearError } from '../../store/slices/authSlice';
+import Logo from '../../components/ui/Logo';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -71,42 +72,8 @@ const Login = () => {
           transition={{ duration: 0.8 }}
           className="text-center"
         >
-          <Link to="/" className="flex items-center justify-center space-x-2 mb-8">
-            <motion.div
-              className="text-primary"
-              animate={{ y: [0, -5, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <svg
-                className="w-10 h-10"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12 2L2 7L12 12L22 7L12 2Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M2 17L12 22L22 17"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M2 12L12 17L22 12"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </motion.div>
-            <span className="text-2xl font-bold text-dark">JerseyNexus</span>
+          <Link to="/" className="flex justify-center mb-8">
+            <Logo size="xl" animated={true} showText={true} variant="default" />
           </Link>
           <h2 className="text-3xl font-bold text-dark mb-2">Welcome Back</h2>
           <p className="text-muted">Sign in to your account to continue</p>

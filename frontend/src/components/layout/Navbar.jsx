@@ -14,6 +14,7 @@ import {
 } from '../ui/ProfessionalIcon';
 import { logout } from '../../store/slices/authSlice';
 import { productAPI } from '../../utils/api';
+import Logo from '../ui/Logo';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -110,44 +111,8 @@ const Navbar = () => {
       <div className="container">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 group">
-            <motion.div
-              className="text-primary"
-              animate={{ y: [0, -5, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <svg
-                className="w-8 h-8"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12 2L2 7L12 12L22 7L12 2Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M2 17L12 22L22 17"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M2 12L12 17L22 12"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </motion.div>
-            <span className="text-xl font-bold text-dark group-hover:text-primary transition-colors">
-              JerseyNexus
-            </span>
+          <Link to="/" className="group">
+            <Logo size="lg" animated={true} showText={true} variant="default" />
           </Link>
 
           {/* Desktop Navigation */}

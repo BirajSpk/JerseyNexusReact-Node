@@ -38,6 +38,7 @@ import EsewaSuccess from './pages/EsewaSuccess';
 import EsewaFailed from './pages/EsewaFailed';
 import KhaltiSuccess from './pages/KhaltiSuccess';
 import KhaltiFailed from './pages/KhaltiFailed';
+import LogoShowcase from './pages/LogoShowcase';
 
 function App() {
   const location = useLocation();
@@ -72,6 +73,7 @@ function App() {
             <Route path="/payment/esewa/success" element={<EsewaSuccess />} />
             <Route path="/payment/esewa/failed" element={<EsewaFailed />} />
             <Route path="/test/esewa" element={<EsewaTest />} />
+            <Route path="/logo-showcase" element={<LogoShowcase />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
