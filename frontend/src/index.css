@@ -1,3 +1,6 @@
+/* Import logo animations */
+@import './styles/logo-animations.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,7 +9,7 @@
   * {
     @apply border-gray-200;
   }
-  
+
   body {
     @apply bg-neutral text-dark;
     font-feature-settings: "rlig" 1, "calt" 1;

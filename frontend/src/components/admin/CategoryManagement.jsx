@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { categoryAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
 const CategoryManagement = () => {
@@ -16,22 +16,18 @@ const CategoryManagement = () => {
   });
 
   const categoryTypes = [
-    { value: 'PRODUCT', label: 'Product Categories', icon: '👕' },
-    { value: 'BLOG', label: 'Blog Categories', icon: '📝' }
+    { value: 'PRODUCT', label: 'Product Categories', icon: '' },
+    { value: 'BLOG', label: 'Blog Categories', icon: '' }
   ];
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [activeTab]); // Refetch when tab changes
 
   const fetchCategories = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories`, config);
+      // Fetch categories for the active tab type
+      const response = await categoryAPI.getCategories({ type: activeTab });
       setCategories(response.data.data?.categories || response.data.data || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -55,9 +51,9 @@ const CategoryManagement = () => {
       };
 
       if (editingCategory) {
-        await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories/${editingCategory.id}`, categoryData, config);
+        await categoryAPI.updateCategory(editingCategory.id, categoryData);
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories`, categoryData, config);
+        await categoryAPI.createCategory(categoryData);
       }
 
       fetchCategories();
@@ -86,10 +82,7 @@ const CategoryManagement = () => {
     if (!confirm('Are you sure you want to delete this category?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories/${categoryId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await categoryAPI.deleteCategory(categoryId);
       fetchCategories();
       toast.success('Category deleted successfully!');
     } catch (error) {
@@ -108,7 +101,7 @@ const CategoryManagement = () => {
     setEditingCategory(null);
   };
 
-  const filteredCategories = categories.filter(category => category.type === activeTab);
+  // Categories are already filtered by activeTab from the API call
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -162,7 +155,7 @@ const CategoryManagement = () => {
                 <span className="mr-2">{type.icon}</span>
                 {type.label}
                 <span className="ml-2 bg-gray-100 text-gray-600 py-1 px-2 rounded-full text-xs">
-                  {filteredCategories.length}
+                  {categories.length}
                 </span>
               </button>
             ))}
@@ -171,7 +164,7 @@ const CategoryManagement = () => {
 
         {/* Categories List */}
         <div className="p-6">
-          {filteredCategories.length === 0 ? (
+          {categories.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-4xl mb-4">
                 {categoryTypes.find(t => t.value === activeTab)?.icon}
@@ -194,7 +187,7 @@ const CategoryManagement = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCategories.map((category) => (
+              {categories.map((category) => (
                 <div key={category.id} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">

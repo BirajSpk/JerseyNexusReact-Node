@@ -1,0 +1,22 @@
+<svg width="32" height="32" viewBox="0 0 505 505" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main Circle Background -->
+  <circle cx="252.5" cy="252.5" r="252.5" fill="#1A73E8"/>
+
+  <!-- White Building/Jersey Shape -->
+  <path d="M350.4,100.7H234.5l0,0l-33.4,33.4c17.9,17.9,17.9,46.9,0,64.7c-17.9,17.9-46.9,17.9-64.7,0 L103,232.2l2.2,2.2l-2.3-2.1v115.9h61.9V294l105.8,105.8l131.6-131.6L296.4,162.6h54V100.7z" fill="#ffffff"/>
+
+  <!-- White Center Element -->
+  <path d="M281.2,245v12.4c-9.3,1.7-18.9,2.6-28.7,2.6c-9.8,0-19.4-0.9-28.7-2.6V245c9.3,1.6,18.9,2.4,28.7,2.4 C262.3,247.4,271.9,246.6,281.2,245z" fill="#ffffff"/>
+
+  <!-- Yellow Rectangle -->
+  <rect x="218.81" y="270.084" width="25.2" height="25.2" fill="#FFD05B" transform="matrix(-0.7071 0.7071 -0.7071 -0.7071 594.9292 318.9407)"/>
+
+  <!-- Green Rectangle -->
+  <rect x="254.413" y="270.102" width="25.2" height="25.2" fill="#4CDBC4" transform="matrix(-0.7071 0.7071 -0.7071 -0.7071 655.7191 293.7952)"/>
+
+  <!-- Red Rectangle -->
+  <rect x="254.44" y="234.489" width="25.2" height="25.2" fill="#FF7058" transform="matrix(-0.7071 0.7071 -0.7071 -0.7071 630.5836 232.9812)"/>
+
+  <!-- Dark Rectangle -->
+  <rect x="290.043" y="234.506" width="25.2" height="25.2" fill="#324A5E" transform="matrix(-0.7071 0.7071 -0.7071 -0.7071 691.3735 207.8356)"/>
+</svg>

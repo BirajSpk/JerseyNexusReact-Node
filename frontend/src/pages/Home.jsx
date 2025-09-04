@@ -4,6 +4,7 @@ import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
 import { ShoppingBag, Truck, Shield, Star } from '../components/ui/ProfessionalIcon';
 import FeaturedProducts from '../components/FeaturedProducts';
 import FeaturedBlogs from '../components/FeaturedBlogs';
+import Logo from '../components/ui/Logo';
 
 const Home = () => {
   const features = [
@@ -76,35 +77,8 @@ const Home = () => {
                   transition={{ duration: 3, repeat: Infinity }}
                   className="text-center"
                 >
-                  <div className="w-32 h-32 bg-accent rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <svg
-                      className="w-16 h-16 text-white"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M12 2L2 7L12 12L22 7L12 2Z"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M2 17L12 22L22 17"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M2 12L12 17L22 12"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                  <div className="w-32 h-32 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center backdrop-blur-sm">
+                    <Logo size="2xl" animated={true} showText={false} variant="hero" />
                   </div>
                   <h3 className="text-2xl font-bold mb-2">JerseyNexus</h3>
                   <p className="text-white/80">Premium Sports Collection</p>

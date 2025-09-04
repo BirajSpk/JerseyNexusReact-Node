@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { productAPI, userAPI, orderAPI } from '../../utils/api';
 
 const DashboardStats = () => {
   const [stats, setStats] = useState({
@@ -23,13 +23,9 @@ const DashboardStats = () => {
       
       // Fetch multiple endpoints to get comprehensive stats
       const [productsRes, usersRes, ordersRes] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/products`),
-        axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        }).catch(() => ({ data: { data: { users: [] } } })), // Fallback if endpoint fails
-        axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/orders`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        }).catch(() => ({ data: { data: { orders: [] } } })) // Fallback if endpoint fails
+        productAPI.getProducts(),
+        userAPI.getUsers().catch(() => ({ data: { data: { users: [] } } })), // Fallback if endpoint fails
+        orderAPI.getOrders().catch(() => ({ data: { data: { orders: [] } } })) // Fallback if endpoint fails
       ]);
 
       const products = productsRes.data.data.products || [];

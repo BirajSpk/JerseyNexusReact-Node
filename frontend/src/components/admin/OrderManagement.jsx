@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
+import { orderAPI } from '../../utils/api';
 
 const OrderManagement = () => {
   const [orders, setOrders] = useState([]);
@@ -18,10 +18,7 @@ const OrderManagement = () => {
 
   const fetchOrders = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/orders`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await orderAPI.getOrders();
       setOrders(response.data.data?.orders || response.data.data || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -34,12 +31,7 @@ const OrderManagement = () => {
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.put(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/orders/${orderId}`,
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await orderAPI.updateOrderStatus(orderId, { status: newStatus });
       
       // Update local state
       setOrders(orders.map(order => 
@@ -57,11 +49,7 @@ const OrderManagement = () => {
 
   const deleteOrder = async (orderId) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/orders/${orderId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await orderAPI.deleteOrder(orderId);
       
       // Update local state
       setOrders(orders.filter(order => order.id !== orderId));
@@ -92,6 +80,35 @@ const OrderManagement = () => {
       case 'DELIVERED': return 'bg-green-100 text-green-800';
       case 'CANCELLED': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPaymentMethodIcon = (method) => {
+    switch (method?.toUpperCase()) {
+      case 'KHALTI':
+        return <span className="text-purple-600">💳</span>;
+      case 'ESEWA':
+        return <span className="text-green-600">💰</span>;
+      case 'COD':
+      case 'CASH_ON_DELIVERY':
+        return <span className="text-orange-600">💵</span>;
+      default:
+        return <span className="text-gray-400">❓</span>;
+    }
+  };
+
+  const getPaymentStatusColor = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'PAID':
+        return 'text-green-600 font-medium';
+      case 'PENDING':
+        return 'text-yellow-600 font-medium';
+      case 'FAILED':
+        return 'text-red-600 font-medium';
+      case 'REFUNDED':
+        return 'text-blue-600 font-medium';
+      default:
+        return 'text-gray-500';
     }
   };
 
@@ -166,6 +183,9 @@ const OrderManagement = () => {
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Payment Method
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -194,6 +214,19 @@ const OrderManagement = () => {
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
                       {order.status}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {getPaymentMethodIcon(order.paymentMethod)}
+                      <span className="ml-2 text-sm text-gray-900">
+                        {order.paymentMethod || 'N/A'}
+                      </span>
+                    </div>
+                    {order.paymentStatus && (
+                      <div className={`text-xs mt-1 ${getPaymentStatusColor(order.paymentStatus)}`}>
+                        {order.paymentStatus}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(order.createdAt).toLocaleDateString()}
@@ -268,6 +301,24 @@ const OrderManagement = () => {
                 <h4 className="font-medium text-gray-900 mb-2">Order Information</h4>
                 <p className="text-sm text-gray-600">Status: {selectedOrder.status}</p>
                 <p className="text-sm text-gray-600">Date: {new Date(selectedOrder.createdAt).toLocaleString()}</p>
+                <div className="flex items-center mt-2">
+                  <span className="text-sm text-gray-600 mr-2">Payment Method:</span>
+                  {getPaymentMethodIcon(selectedOrder.paymentMethod)}
+                  <span className="ml-1 text-sm text-gray-900">
+                    {selectedOrder.paymentMethod || 'N/A'}
+                  </span>
+                </div>
+                {selectedOrder.paymentStatus && (
+                  <p className="text-sm text-gray-600">
+                    Payment Status:
+                    <span className={`ml-1 ${getPaymentStatusColor(selectedOrder.paymentStatus)}`}>
+                      {selectedOrder.paymentStatus}
+                    </span>
+                  </p>
+                )}
+                {selectedOrder.paymentId && (
+                  <p className="text-sm text-gray-600">Payment ID: {selectedOrder.paymentId}</p>
+                )}
               </div>
             </div>
 

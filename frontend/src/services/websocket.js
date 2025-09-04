@@ -14,13 +14,18 @@ class WebSocketService {
     }
 
     this.token = token;
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    // Use backend origin (strip /api suffix if provided)
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003/api';
+    const API_URL = API_BASE.replace(/\/api\/?$/, '');
 
     this.socket = io(API_URL, {
       auth: {
         token: token
       },
-      autoConnect: true
+      autoConnect: true,
+      transports: ['websocket', 'polling'],
+      timeout: 20000,
+      forceNew: true
     });
 
     this.socket.on('connect', () => {
@@ -36,6 +41,16 @@ class WebSocketService {
     this.socket.on('connect_error', (error) => {
       console.error('WebSocket connection error:', error);
       this.isConnected = false;
+
+      // Handle specific error types
+      if (error.message === 'Authentication error') {
+        console.error('WebSocket authentication failed. Please check your token.');
+        toast.error('Connection authentication failed');
+      } else if (error.message === 'Invalid namespace') {
+        console.error('WebSocket namespace error');
+      } else {
+        console.error('WebSocket connection failed:', error.message);
+      }
     });
 
     // Order update listeners

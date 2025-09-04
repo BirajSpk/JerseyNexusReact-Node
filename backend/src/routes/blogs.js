@@ -8,6 +8,7 @@ const {
 } = require('../controllers/blogController');
 const { protect, authorize } = require('../middlewares/auth');
 const { validateBlog } = require('../utils/validation');
+const { uploadBlogImage } = require('../middlewares/upload');
 
 const router = express.Router();
 
@@ -17,8 +18,8 @@ router.get('/slug/:slug', getBlog);
 router.get('/:id', getBlog);
 
 // Admin routes
-router.post('/', protect, authorize('ADMIN'), validateBlog, createBlog);
-router.put('/:id', protect, authorize('ADMIN'), updateBlog);
+router.post('/', protect, authorize('ADMIN'), uploadBlogImage, validateBlog, createBlog);
+router.put('/:id', protect, authorize('ADMIN'), uploadBlogImage, validateBlog, updateBlog);
 router.delete('/:id', protect, authorize('ADMIN'), deleteBlog);
 
 module.exports = router;

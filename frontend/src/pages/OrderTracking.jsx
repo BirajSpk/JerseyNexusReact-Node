@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { orderAPI } from '../utils/api';
 
 const OrderTracking = () => {
   const { orderId } = useParams();
@@ -59,11 +59,7 @@ const OrderTracking = () => {
 
   const fetchOrderDetails = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/orders/${orderId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await orderAPI.getOrderById(orderId);
       setOrder(response.data.data.order);
     } catch (error) {
       console.error('Error fetching order details:', error);

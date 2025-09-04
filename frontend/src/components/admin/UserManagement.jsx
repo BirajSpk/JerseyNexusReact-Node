@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
+import { userAPI } from '../../utils/api';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -32,10 +32,7 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await userAPI.getUsers();
       setUsers(response.data.data?.users || response.data.data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -49,16 +46,11 @@ const UserManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-
       if (editingUser) {
-        const response = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users/${editingUser.id}`, formData, config);
+        await userAPI.updateUser(editingUser.id, formData);
         toast.success('User updated successfully!');
       } else {
-        const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users`, formData, config);
+        await userAPI.createUser(formData);
         toast.success('User created successfully!');
       }
 
@@ -87,12 +79,9 @@ const UserManagement = () => {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await userAPI.deleteUser(userId);
       fetchUsers();
-      alert('User deleted successfully!');
+      toast.success('User deleted successfully!');
     } catch (error) {
       console.error('Error deleting user:', error);
       alert('Error deleting user. Please try again.');
@@ -101,18 +90,11 @@ const UserManagement = () => {
 
   const updateUserRole = async (userId, newRole) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/users/${userId}/role`,
-        { role: newRole },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      setUsers(users.map(user => 
+      await userAPI.updateUserRole(userId, newRole);
+      setUsers(users.map(user =>
         user.id === userId ? { ...user, role: newRole } : user
       ));
-      
-      alert('User role updated successfully!');
+      toast.success('User role updated successfully!');
     } catch (error) {
       console.error('Error updating user role:', error);
       alert('Error updating user role. Please try again.');

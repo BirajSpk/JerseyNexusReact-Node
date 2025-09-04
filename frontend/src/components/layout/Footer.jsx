@@ -9,6 +9,7 @@ import {
   Phone,
   MapPin
 } from '../ui/ProfessionalIcon';
+import Logo from '../ui/Logo';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -46,42 +47,8 @@ const Footer = () => {
               transition={{ duration: 0.5 }}
               className="mb-6"
             >
-              <Link to="/" className="flex items-center space-x-2 mb-4">
-                <motion.div
-                  className="text-primary"
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <svg
-                    className="w-8 h-8"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M12 2L2 7L12 12L22 7L12 2Z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M2 17L12 22L22 17"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M2 12L12 17L22 12"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </motion.div>
-                <span className="text-xl font-bold">JerseyNexus</span>
+              <Link to="/" className="mb-4 inline-block">
+                <Logo size="lg" animated={true} showText={true} variant="white" />
               </Link>
               <p className="text-gray-300 mb-4">
                 Nepal's premier destination for authentic sportswear and jerseys. 

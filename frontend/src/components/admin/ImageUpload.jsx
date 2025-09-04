@@ -3,13 +3,14 @@ import { motion } from '../../utils/motion.jsx';
 import { Upload, X, Image as ImageIcon, Loader } from '../ui/ProfessionalIcon';
 import toast from 'react-hot-toast';
 
-const ImageUpload = ({ 
-  images = [], 
-  onImagesChange, 
-  maxImages = 1, 
+const ImageUpload = ({
+  images = [],
+  onImagesChange,
+  maxImages = 1,
   label = "Upload Images",
   accept = "image/*",
-  maxSizeInMB = 5 
+  maxSizeInMB = 5,
+  withAlt = false
 }) => {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -34,7 +35,7 @@ const ImageUpload = ({
 
   const handleFileSelect = async (files) => {
     const fileArray = Array.from(files);
-    
+
     // Check if adding these files would exceed the limit
     if (images.length + fileArray.length > maxImages) {
       toast.error(`You can only upload up to ${maxImages} image${maxImages > 1 ? 's' : ''}`);
@@ -52,11 +53,11 @@ const ImageUpload = ({
 
     try {
       const newImages = [];
-      
+
       for (const file of fileArray) {
         // Create preview URL
         const previewUrl = URL.createObjectURL(file);
-        
+
         // Create image object
         const imageObj = {
           id: Date.now() + Math.random(), // Temporary ID
@@ -66,14 +67,14 @@ const ImageUpload = ({
           size: file.size,
           isNew: true
         };
-        
+
         newImages.push(imageObj);
       }
 
       // Update parent component
       onImagesChange([...images, ...newImages]);
       toast.success(`${newImages.length} image${newImages.length > 1 ? 's' : ''} added successfully`);
-      
+
     } catch (error) {
       console.error('Error processing images:', error);
       toast.error('Failed to process images');
@@ -84,13 +85,13 @@ const ImageUpload = ({
 
   const handleRemoveImage = (imageId) => {
     const updatedImages = images.filter(img => img.id !== imageId);
-    
+
     // Clean up preview URLs for removed images
     const removedImage = images.find(img => img.id === imageId);
     if (removedImage && removedImage.preview && removedImage.isNew) {
       URL.revokeObjectURL(removedImage.preview);
     }
-    
+
     onImagesChange(updatedImages);
     toast.success('Image removed');
   };
@@ -109,7 +110,7 @@ const ImageUpload = ({
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileSelect(e.dataTransfer.files);
     }
@@ -135,8 +136,8 @@ const ImageUpload = ({
       {images.length < maxImages && (
         <div
           className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-            dragActive 
-              ? 'border-blue-400 bg-blue-50' 
+            dragActive
+              ? 'border-blue-400 bg-blue-50'
               : 'border-gray-300 hover:border-gray-400'
           }`}
           onDragEnter={handleDrag}
@@ -152,7 +153,7 @@ const ImageUpload = ({
             onChange={handleInputChange}
             className="hidden"
           />
-          
+
           {uploading ? (
             <div className="flex flex-col items-center">
               <Loader className="h-8 w-8 text-blue-500 animate-spin mb-2" />
@@ -200,7 +201,7 @@ const ImageUpload = ({
                   }}
                 />
               </div>
-              
+
               {/* Remove Button */}
               <button
                 type="button"
@@ -209,7 +210,7 @@ const ImageUpload = ({
               >
                 <X className="h-4 w-4" />
               </button>
-              
+
               {/* Image Info */}
               <div className="mt-2">
                 <p className="text-xs text-gray-600 truncate">
@@ -220,12 +221,27 @@ const ImageUpload = ({
                     {(image.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 )}
+                {withAlt && (
+                  <div className="mt-2">
+                    <label className="block text-xs text-gray-600 mb-1">Alt text</label>
+                    <input
+                      type="text"
+                      value={image.altText || ''}
+                      onChange={(e) => {
+                        const updated = images.map(img => img.id === image.id ? { ...img, altText: e.target.value } : img);
+                        onImagesChange(updated);
+                      }}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                      placeholder="Describe the image"
+                    />
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
         </div>
       )}
-      
+
       {/* Upload Progress */}
       {images.length > 0 && (
         <div className="text-sm text-gray-600">

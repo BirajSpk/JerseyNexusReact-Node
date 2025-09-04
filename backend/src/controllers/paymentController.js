@@ -6,11 +6,12 @@ const WebSocketService = require('../utils/websocket');
 const paymentService = require('../services/paymentService');
 const { prisma, executeWithRetry } = require('../config/database');
 
-// Khalti Configuration
+// Khalti Configuration (KPG-2)
 const KHALTI_LIVE_PUBLIC_KEY = process.env.KHALTI_LIVE_PUBLIC_KEY;
-const KHALTI_LIVE_SECRET_KEY = process.env.KHALTI_LIVE_SECRET_KEY || process.env.KHALTI_SECRET_KEY; // fallback to older env var name
-const KHALTI_RETURN_URL = process.env.KHALTI_RETURN_URL || 'http://localhost:5003/api/payments/khalti/callback-new';
-const KHALTI_API_URL = process.env.KHALTI_API_URL || 'https://a.khalti.com/api/v2/epayment/initiate/';
+const KHALTI_LIVE_SECRET_KEY = process.env.KHALTI_LIVE_SECRET_KEY || process.env.KHALTI_SECRET_KEY;
+const KHALTI_RETURN_URL = process.env.KHALTI_RETURN_URL || 'http://localhost:3000/payment/khalti/callback';
+const KHALTI_INITIATE_URL = process.env.KHALTI_INITIATE_URL || 'https://khalti.com/api/v2/epayment/initiate/';
+const KHALTI_LOOKUP_URL = process.env.KHALTI_LOOKUP_URL || 'https://khalti.com/api/v2/epayment/lookup/';
 
 // @desc    Initialize Khalti payment
 // @route   POST /api/payments/khalti/initiate
@@ -268,6 +269,8 @@ const initiateEsewaPayment = asyncHandler(async (req, res) => {
   const { orderId, amount, productName } = req.body;
   const userId = req.user.id;
 
+  console.log('🔄 eSewa payment initiation started for order:', orderId);
+
   // Get order details
   const order = await prisma.order.findFirst({
     where: {
@@ -299,48 +302,54 @@ const initiateEsewaPayment = asyncHandler(async (req, res) => {
   });
 
   try {
-    // New eSewa ePay v2 form parameters (RC environment)
+    // eSewa ePay v2 form parameters according to documentation
     const amount = order.totalAmount;
     const tax_amount = 0;
     const product_service_charge = 0;
     const product_delivery_charge = 0;
     const total_amount = amount + tax_amount + product_service_charge + product_delivery_charge;
-    const transaction_uuid = payment.id; // use our payment id
+    const transaction_uuid = payment.id; // use our payment id as unique transaction identifier
     const product_code = process.env.ESEWA_MERCHANT_CODE || 'EPAYTEST';
-    const success_url = `${process.env.BACKEND_URL || 'http://localhost:5003'}/api/payments/esewa/success`;
-    const failure_url = `${process.env.FRONTEND_URL}/payment/failed`;
+    const success_url = process.env.ESEWA_SUCCESS_URL || `${process.env.BACKEND_URL || 'http://localhost:5003'}/api/payments/esewa/success`;
+    const failure_url = process.env.ESEWA_FAILURE_URL || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/failed`;
 
-    // Signed fields
+    // Generate signature according to eSewa documentation
     const signed_field_names = 'total_amount,transaction_uuid,product_code';
-    const raw = `total_amount=${total_amount},transaction_uuid=${transaction_uuid},product_code=${product_code}`;
-    const hmacKey = process.env.ESEWA_SECRET_KEY || '';
-    const signature = crypto.createHmac('sha256', hmacKey).update(raw).digest('base64');
+    const signatureMessage = `total_amount=${total_amount},transaction_uuid=${transaction_uuid},product_code=${product_code}`;
+    const hmacKey = process.env.ESEWA_SECRET_KEY || '8gBm/:&EnhH.1/q';
+    const signature = crypto.createHmac('sha256', hmacKey).update(signatureMessage).digest('base64');
 
-    const esewaFormUrl = 'https://rc-epay.esewa.com.np/api/epay/main/v2/form';
+    console.log('📝 eSewa signature generation:');
+    console.log('Message:', signatureMessage);
+    console.log('Key:', hmacKey);
+    console.log('Signature:', signature);
+
+    const esewaFormUrl = process.env.ESEWA_FORM_URL || 'https://rc-epay.esewa.com.np/api/epay/main/v2/form';
 
     const esewaParams = {
-      amount: amount,
-      tax_amount: tax_amount,
-      total_amount: total_amount,
+      amount: amount.toString(),
+      tax_amount: tax_amount.toString(),
+      total_amount: total_amount.toString(),
       transaction_uuid: transaction_uuid,
       product_code: product_code,
-      product_service_charge: product_service_charge,
-      product_delivery_charge: product_delivery_charge,
+      product_service_charge: product_service_charge.toString(),
+      product_delivery_charge: product_delivery_charge.toString(),
       success_url: success_url,
       failure_url: failure_url,
       signed_field_names: signed_field_names,
       signature: signature
     };
 
-    // Frontend should POST this to esewaFormUrl; return both
-    const payment_url = esewaFormUrl;
+    console.log('📦 eSewa parameters:', esewaParams);
 
     // Update payment with eSewa details
     await paymentService.updatePaymentStatus(payment.id, 'PENDING', {
       externalId: payment.id,
       metadata: {
         ...payment.metadata,
-        esewaParams
+        esewaParams,
+        signatureMessage,
+        hmacKey: hmacKey.substring(0, 3) + '***' // Log partial key for debugging
       }
     });
 
@@ -354,77 +363,127 @@ const initiateEsewaPayment = asyncHandler(async (req, res) => {
     });
 
     sendResponse(res, 200, true, 'eSewa payment initialized successfully', {
-      payment_url,
+      payment_url: esewaFormUrl,
       paymentId: payment.id,
       esewaParams
     });
 
   } catch (error) {
-    console.error('eSewa payment initiation error:', error);
-    sendResponse(res, 500, false, 'Failed to initiate eSewa payment');
+    console.error('❌ eSewa payment initiation error:', error);
+    sendResponse(res, 500, false, 'Failed to initiate eSewa payment', {
+      error: error.message
+    });
   }
 });
 
-// @desc    Verify eSewa payment
+// @desc    Verify eSewa payment using status check API
 // @route   POST /api/payments/esewa/verify
 // @access  Private
 const verifyEsewaPayment = asyncHandler(async (req, res) => {
-  const { oid, amt, refId } = req.body;
+  const { transaction_uuid, total_amount, product_code } = req.body;
+
+  console.log('🔍 eSewa payment verification started:', { transaction_uuid, total_amount, product_code });
 
   try {
-    // Find payment by ID
-    const payment = await paymentService.getPaymentById(oid);
+    // Find payment by transaction UUID (our payment ID)
+    const payment = await paymentService.getPaymentById(transaction_uuid);
     if (!payment) {
       return sendResponse(res, 404, false, 'Payment not found');
     }
 
-    // Verify with eSewa
-    const verificationUrl = 'https://uat.esewa.com.np/epay/transrec';
-    const verificationParams = {
-      amt,
-      rid: refId,
-      pid: oid,
-      scd: process.env.ESEWA_MERCHANT_CODE || 'EPAYTEST'
+    // Use eSewa status check API
+    const statusCheckUrl = process.env.ESEWA_STATUS_CHECK_URL || 'https://rc.esewa.com.np/api/epay/transaction/status/';
+    const statusParams = {
+      product_code: product_code || process.env.ESEWA_MERCHANT_CODE || 'EPAYTEST',
+      total_amount: total_amount || payment.amount,
+      transaction_uuid: transaction_uuid
     };
 
-    const verificationResponse = await axios.post(verificationUrl, verificationParams);
+    console.log('📡 Checking eSewa status with params:', statusParams);
 
-    if (verificationResponse.data.includes('Success')) {
+    const statusResponse = await axios.get(statusCheckUrl, { params: statusParams });
+    const statusData = statusResponse.data;
+
+    console.log('📦 eSewa status response:', statusData);
+
+    if (statusData.status === 'COMPLETE') {
       // Update payment as successful
       await paymentService.updatePaymentStatus(payment.id, 'SUCCESS', {
-        transactionId: refId,
-        gatewayResponse: { status: 'Success', refId },
+        transactionId: statusData.ref_id,
+        gatewayResponse: statusData,
         metadata: {
           ...payment.metadata,
-          verifiedAt: new Date()
+          verifiedAt: new Date(),
+          esewaRefId: statusData.ref_id
         }
       });
 
-      // Notify via WebSocket
-      WebSocketService.notifyOrderUpdate(payment.orderId, {
-        type: 'payment_success',
-        orderId: payment.orderId,
-        paymentMethod: 'ESEWA'
-      });
+      // Update order status if order exists
+      if (payment.orderId) {
+        await prisma.order.update({
+          where: { id: payment.orderId },
+          data: {
+            paymentStatus: 'PAID',
+            status: 'CONFIRMED',
+            paymentId: statusData.ref_id
+          }
+        });
+
+        // Notify via WebSocket
+        if (payment.orderId) {
+          const order = await prisma.order.findUnique({ where: { id: payment.orderId } });
+          if (order) {
+            WebSocketService.emitOrderUpdate(order);
+          }
+        }
+      }
 
       sendResponse(res, 200, true, 'eSewa payment verified successfully', {
         paymentId: payment.id,
         orderId: payment.orderId,
-        status: 'SUCCESS'
+        status: 'SUCCESS',
+        transactionId: statusData.ref_id,
+        esewaStatus: statusData.status
       });
     } else {
-      // Update payment as failed
-      await paymentService.updatePaymentStatus(payment.id, 'FAILED', {
-        failureReason: 'eSewa verification failed',
-        gatewayResponse: { status: 'Failed', response: verificationResponse.data }
+      // Handle different status types
+      let failureReason = 'eSewa verification failed';
+      switch (statusData.status) {
+        case 'PENDING':
+          failureReason = 'Payment is still pending';
+          break;
+        case 'CANCELED':
+          failureReason = 'Payment was canceled';
+          break;
+        case 'NOT_FOUND':
+          failureReason = 'Payment not found or session expired';
+          break;
+        case 'AMBIGUOUS':
+          failureReason = 'Payment is in ambiguous state';
+          break;
+        default:
+          failureReason = `Payment status: ${statusData.status}`;
+      }
+
+      // Update payment status accordingly
+      const paymentStatus = statusData.status === 'PENDING' ? 'PENDING' : 'FAILED';
+      await paymentService.updatePaymentStatus(payment.id, paymentStatus, {
+        failureReason,
+        gatewayResponse: statusData
       });
 
-      sendResponse(res, 400, false, 'eSewa payment verification failed');
+      sendResponse(res, 400, false, failureReason, {
+        paymentId: payment.id,
+        esewaStatus: statusData.status,
+        statusData
+      });
     }
 
   } catch (error) {
-    console.error('eSewa payment verification error:', error);
-    sendResponse(res, 500, false, 'Failed to verify eSewa payment');
+    console.error('❌ eSewa payment verification error:', error);
+    sendResponse(res, 500, false, 'Failed to verify eSewa payment', {
+      error: error.message
+    });
   }
 });
 
@@ -629,12 +688,12 @@ const handleKhaltiCallbackNew = asyncHandler(async (req, res) => {
       }
 
       // Notify via WebSocket
-      WebSocketService.notifyOrderUpdate(orderId, {
-        type: 'payment_success',
-        orderId: orderId,
-        paymentMethod: 'KHALTI',
-        transactionId: transaction_id
-      });
+      if (orderId) {
+        const order = await prisma.order.findUnique({ where: { id: orderId } });
+        if (order) {
+          WebSocketService.emitOrderUpdate(order);
+        }
+      }
 
       // Redirect to success page
       return res.redirect(`${process.env.FRONTEND_URL}/order-success?orderId=${orderId}&transactionId=${transaction_id}`);
@@ -722,7 +781,7 @@ const initiateKhaltiPaymentWithOrder = asyncHandler(async (req, res) => {
       }
     };
 
-    const response = await axios.post(KHALTI_API_URL, payload, {
+    const response = await axios.post(KHALTI_INITIATE_URL, payload, {
       headers: {
         'Authorization': `Key ${KHALTI_LIVE_SECRET_KEY}`,
         'Content-Type': 'application/json'
@@ -746,6 +805,158 @@ const initiateKhaltiPaymentWithOrder = asyncHandler(async (req, res) => {
     console.error('Error stack:', error.stack);
     sendResponse(res, 500, false, 'Failed to initialize payment', {
       error: error.response?.data?.detail || error.message
+    });
+  }
+});
+
+// @desc    Initialize Khalti payment (KPG-2)
+// @route   POST /api/payments/khalti/initiate-v2
+// @access  Private
+const initiateKhaltiPaymentV2 = asyncHandler(async (req, res) => {
+  const { orderId, amount, productName } = req.body;
+  const userId = req.user.id;
+
+  console.log('🔄 Khalti KPG-2 payment initiation started for order:', orderId);
+
+  // Get order details if orderId is provided
+  let order = null;
+  if (orderId) {
+    order = await prisma.order.findFirst({
+      where: {
+        id: orderId,
+        userId: userId
+      },
+      include: {
+        items: { include: { product: true } },
+        user: true
+      }
+    });
+
+    if (!order) {
+      return sendResponse(res, 404, false, 'Order not found');
+    }
+
+    if (order.paymentStatus === 'PAID') {
+      return sendResponse(res, 400, false, 'Order already paid');
+    }
+  }
+
+  // Create payment record
+  const payment = await paymentService.createPayment({
+    orderId: order?.id || null,
+    amount: amount || order?.totalAmount,
+    method: 'KHALTI',
+    metadata: {
+      productName: productName || `JerseyNexus Order #${order?.id || 'Direct Payment'}`
+    }
+  });
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true, phone: true }
+    });
+
+    // Prepare Khalti KPG-2 payload
+    const khaltiPayload = {
+      return_url: KHALTI_RETURN_URL,
+      website_url: process.env.FRONTEND_URL || 'http://localhost:3000',
+      amount: Math.round((amount || order?.totalAmount) * 100), // Convert to paisa
+      purchase_order_id: payment.id,
+      purchase_order_name: productName || `JerseyNexus Order #${order?.id || payment.id}`,
+      customer_info: {
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '9800000000'
+      }
+    };
+
+    // Add amount breakdown if order exists
+    if (order) {
+      khaltiPayload.amount_breakdown = [
+        {
+          label: 'Product Amount',
+          amount: Math.round((order.totalAmount - order.shippingCost + order.discountAmount) * 100)
+        }
+      ];
+
+      if (order.shippingCost > 0) {
+        khaltiPayload.amount_breakdown.push({
+          label: 'Shipping Cost',
+          amount: Math.round(order.shippingCost * 100)
+        });
+      }
+
+      if (order.discountAmount > 0) {
+        khaltiPayload.amount_breakdown.push({
+          label: 'Discount',
+          amount: -Math.round(order.discountAmount * 100)
+        });
+      }
+
+      // Add product details
+      khaltiPayload.product_details = order.items.map(item => ({
+        identity: item.product.id,
+        name: item.product.name,
+        total_price: Math.round(item.price * item.quantity * 100),
+        quantity: item.quantity,
+        unit_price: Math.round(item.price * 100)
+      }));
+    }
+
+    console.log('📦 Khalti KPG-2 payload:', khaltiPayload);
+
+    // Make request to Khalti
+    const khaltiResponse = await axios.post(KHALTI_INITIATE_URL, khaltiPayload, {
+      headers: {
+        'Authorization': `Key ${KHALTI_LIVE_SECRET_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('✅ Khalti KPG-2 response:', khaltiResponse.data);
+
+    // Update payment with Khalti details
+    await paymentService.updatePaymentStatus(payment.id, 'PENDING', {
+      externalId: khaltiResponse.data.pidx,
+      metadata: {
+        ...payment.metadata,
+        khaltiPidx: khaltiResponse.data.pidx,
+        khaltiPaymentUrl: khaltiResponse.data.payment_url,
+        expiresAt: khaltiResponse.data.expires_at
+      }
+    });
+
+    // Update order with payment reference if order exists
+    if (order) {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          paymentId: payment.id,
+          paymentMethod: 'KHALTI'
+        }
+      });
+    }
+
+    sendResponse(res, 200, true, 'Khalti payment initialized successfully', {
+      paymentId: payment.id,
+      pidx: khaltiResponse.data.pidx,
+      payment_url: khaltiResponse.data.payment_url,
+      expires_at: khaltiResponse.data.expires_at,
+      expires_in: khaltiResponse.data.expires_in
+    });
+
+  } catch (error) {
+    console.error('❌ Khalti KPG-2 payment initiation error:', error);
+
+    // Update payment as failed
+    await paymentService.updatePaymentStatus(payment.id, 'FAILED', {
+      failureReason: error.response?.data?.message || error.message,
+      gatewayResponse: error.response?.data
+    });
+
+    sendResponse(res, 500, false, 'Failed to initiate Khalti payment', {
+      error: error.response?.data || error.message
     });
   }
 });
@@ -927,7 +1138,12 @@ const handleKhaltiFrontendReturn = asyncHandler(async (req, res) => {
         orderId = payment.orderId;
       }
 
-      WebSocketService.notifyOrderUpdate(orderId, { type: 'payment_success', orderId, paymentMethod: 'KHALTI', transactionId: khaltiData.transaction_id });
+      if (orderId) {
+        const order = await prisma.order.findUnique({ where: { id: orderId } });
+        if (order) {
+          WebSocketService.emitOrderUpdate(order);
+        }
+      }
       return sendResponse(res, 200, true, 'Payment settled', { orderId, pidx });
     }
 
@@ -1039,15 +1255,198 @@ const handleEsewaSuccess = asyncHandler(async (req, res) => {
         metadata: { ...payment.metadata, verifiedAt: new Date() }
       });
 
-      WebSocketService.notifyOrderUpdate(orderId, { type: 'payment_success', orderId, paymentMethod: 'ESEWA', transactionId: transaction_code });
+      if (orderId) {
+        const order = await prisma.order.findUnique({ where: { id: orderId } });
+        if (order) {
+          WebSocketService.emitOrderUpdate(order);
+        }
+      }
 
-      return res.redirect(`${process.env.FRONTEND_URL}/order-success?orderId=${orderId}&transactionId=${transaction_code}`);
+      return res.redirect(`${process.env.FRONTEND_URL}/payment/esewa/success?data=${data}`);
     }
 
-    return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?status=${status}`);
+    return res.redirect(`${process.env.FRONTEND_URL}/payment/esewa/failed?status=${status}`);
   } catch (error) {
     console.error('❌ eSewa success callback error:', error);
-    return res.redirect(`${process.env.FRONTEND_URL}/payment/failed?error=callback_error`);
+    return res.redirect(`${process.env.FRONTEND_URL}/payment/esewa/failed?error=callback_error`);
+  }
+});
+
+// @desc    Check eSewa payment status
+// @route   GET /api/payments/esewa/status/:transaction_uuid
+// @access  Private
+const checkEsewaPaymentStatus = asyncHandler(async (req, res) => {
+  const { transaction_uuid } = req.params;
+
+  console.log('🔍 Checking eSewa payment status for:', transaction_uuid);
+
+  try {
+    // Find payment by transaction UUID
+    const payment = await paymentService.getPaymentById(transaction_uuid);
+    if (!payment) {
+      return sendResponse(res, 404, false, 'Payment not found');
+    }
+
+    // Use eSewa status check API
+    const statusCheckUrl = process.env.ESEWA_STATUS_CHECK_URL || 'https://rc.esewa.com.np/api/epay/transaction/status/';
+    const statusParams = {
+      product_code: process.env.ESEWA_MERCHANT_CODE || 'EPAYTEST',
+      total_amount: payment.amount,
+      transaction_uuid: transaction_uuid
+    };
+
+    console.log('📡 Checking eSewa status with params:', statusParams);
+
+    const statusResponse = await axios.get(statusCheckUrl, { params: statusParams });
+    const statusData = statusResponse.data;
+
+    console.log('📦 eSewa status response:', statusData);
+
+    // Return the status data along with our payment info
+    sendResponse(res, 200, true, 'eSewa payment status retrieved', {
+      paymentId: payment.id,
+      orderId: payment.orderId,
+      localStatus: payment.status,
+      esewaStatus: statusData.status,
+      amount: payment.amount,
+      transactionId: statusData.ref_id,
+      statusData
+    });
+
+  } catch (error) {
+    console.error('❌ eSewa status check error:', error);
+    sendResponse(res, 500, false, 'Failed to check eSewa payment status', {
+      error: error.message
+    });
+  }
+});
+
+// @desc    Handle Khalti KPG-2 callback
+// @route   GET /api/payments/khalti/callback-v2
+// @access  Public
+const handleKhaltiCallbackV2 = asyncHandler(async (req, res) => {
+  const { pidx, status, transaction_id, tidx, amount, mobile, purchase_order_id, purchase_order_name } = req.query;
+
+  console.log('📞 Khalti KPG-2 callback received:', req.query);
+
+  try {
+    // Find payment by purchase_order_id (our payment ID)
+    const payment = await paymentService.getPaymentById(purchase_order_id);
+    if (!payment) {
+      console.error('❌ Payment not found for pidx:', pidx);
+      return res.redirect(`${process.env.FRONTEND_URL}/payment/khalti/failed?error=payment_not_found`);
+    }
+
+    if (status === 'Completed') {
+      // Verify payment with Khalti lookup API
+      try {
+        const lookupResponse = await axios.post(KHALTI_LOOKUP_URL, { pidx }, {
+          headers: {
+            'Authorization': `Key ${KHALTI_LIVE_SECRET_KEY}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const lookupData = lookupResponse.data;
+        console.log('🔍 Khalti lookup response:', lookupData);
+
+        if (lookupData.status === 'Completed') {
+          // Update payment as successful
+          await paymentService.updatePaymentStatus(payment.id, 'SUCCESS', {
+            transactionId: transaction_id,
+            gatewayResponse: {
+              pidx,
+              status,
+              transaction_id,
+              amount: lookupData.total_amount,
+              fee: lookupData.fee,
+              mobile
+            },
+            metadata: {
+              ...payment.metadata,
+              verifiedAt: new Date(),
+              khaltiTransactionId: transaction_id
+            }
+          });
+
+          // Update order status if order exists
+          if (payment.orderId) {
+            await prisma.order.update({
+              where: { id: payment.orderId },
+              data: {
+                paymentStatus: 'PAID',
+                status: 'CONFIRMED',
+                paymentId: transaction_id
+              }
+            });
+
+            // Notify via WebSocket
+            if (payment.orderId) {
+              const order = await prisma.order.findUnique({ where: { id: payment.orderId } });
+              if (order) {
+                WebSocketService.emitOrderUpdate(order);
+              }
+            }
+          }
+
+          return res.redirect(`${process.env.FRONTEND_URL}/payment/khalti/success?pidx=${pidx}&transaction_id=${transaction_id}&amount=${amount}`);
+        } else {
+          throw new Error(`Payment verification failed. Status: ${lookupData.status}`);
+        }
+      } catch (lookupError) {
+        console.error('❌ Khalti lookup error:', lookupError);
+        throw new Error('Payment verification failed');
+      }
+    } else {
+      // Handle failed/canceled payments
+      await paymentService.updatePaymentStatus(payment.id, 'FAILED', {
+        failureReason: `Payment ${status.toLowerCase()}`,
+        gatewayResponse: { pidx, status, transaction_id, amount, mobile }
+      });
+
+      return res.redirect(`${process.env.FRONTEND_URL}/payment/khalti/failed?status=${status}&pidx=${pidx}`);
+    }
+
+  } catch (error) {
+    console.error('❌ Khalti KPG-2 callback error:', error);
+    return res.redirect(`${process.env.FRONTEND_URL}/payment/khalti/failed?error=callback_error`);
+  }
+});
+
+// @desc    Verify Khalti payment using lookup API
+// @route   POST /api/payments/khalti/verify-v2
+// @access  Private
+const verifyKhaltiPaymentV2 = asyncHandler(async (req, res) => {
+  const { pidx } = req.body;
+
+  console.log('🔍 Khalti KPG-2 payment verification started for pidx:', pidx);
+
+  try {
+    // Lookup payment with Khalti
+    const lookupResponse = await axios.post(KHALTI_LOOKUP_URL, { pidx }, {
+      headers: {
+        'Authorization': `Key ${KHALTI_LIVE_SECRET_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const lookupData = lookupResponse.data;
+    console.log('📦 Khalti lookup response:', lookupData);
+
+    sendResponse(res, 200, true, 'Khalti payment status retrieved', {
+      pidx: lookupData.pidx,
+      status: lookupData.status,
+      transaction_id: lookupData.transaction_id,
+      total_amount: lookupData.total_amount,
+      fee: lookupData.fee,
+      refunded: lookupData.refunded
+    });
+
+  } catch (error) {
+    console.error('❌ Khalti KPG-2 verification error:', error);
+    sendResponse(res, 500, false, 'Failed to verify Khalti payment', {
+      error: error.response?.data || error.message
+    });
   }
 });
 
@@ -1061,6 +1460,10 @@ module.exports = {
   initiateEsewaPayment,
   verifyEsewaPayment,
   handleEsewaSuccess,
+  checkEsewaPaymentStatus,
   initiateKhaltiPaymentWithOrder,
-  initiateEsewaPaymentWithOrder
+  initiateEsewaPaymentWithOrder,
+  initiateKhaltiPaymentV2,
+  handleKhaltiCallbackV2,
+  verifyKhaltiPaymentV2
 };

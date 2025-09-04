@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import ImageUpload from './ImageUpload';
 import toast from 'react-hot-toast';
+import { productAPI, categoryAPI } from '../../utils/api';
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
@@ -20,6 +20,9 @@ const ProductManagement = () => {
     categoryId: '',
     metaTitle: '',
     metaDescription: '',
+    keywords: '',
+    slug: '',
+    metaTags: '',
     featured: false,
     status: 'ACTIVE'
   });
@@ -30,13 +33,29 @@ const ProductManagement = () => {
     fetchCategories();
   }, []);
 
+  // Auto-generate slug from product name or keywords
+  useEffect(() => {
+    const toSlug = (str) => {
+      if (!str) return '';
+      return str
+        .toLowerCase()
+        .replace(/,/g, ' ')
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\s/g, '-');
+    };
+
+    // Only auto-generate slug if it's a new product or slug is empty
+    if (!editingProduct || !formData.slug) {
+      const newSlug = toSlug(formData.name || formData.keywords);
+      setFormData(prev => ({ ...prev, slug: newSlug }));
+    }
+  }, [formData.name, formData.keywords, editingProduct]);
+
   const fetchProducts = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/products`, config);
+      const response = await productAPI.getProducts();
       setProducts(response.data.data?.products || response.data.data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -48,12 +67,8 @@ const ProductManagement = () => {
 
   const fetchCategories = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
       // Request only PRODUCT categories
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories?type=PRODUCT`, config);
+      const response = await categoryAPI.getProductCategories();
       const allCategories = response.data.data?.categories || response.data.data || [];
       setCategories(allCategories);
     } catch (error) {
@@ -98,14 +113,18 @@ const ProductManagement = () => {
       };
 
       if (editingProduct) {
-        await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/products/${editingProduct.id}`, submitData, config);
+        await productAPI.updateProduct(editingProduct.id, submitData);
         toast.success('Product updated successfully!');
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/products`, submitData, config);
+        await productAPI.createProduct(submitData);
         toast.success('Product created successfully!');
       }
 
-      fetchProducts();
+      // Small delay to ensure backend processing is complete
+      setTimeout(() => {
+        fetchProducts();
+      }, 500);
+
       resetForm();
       setShowModal(false);
     } catch (error) {
@@ -117,37 +136,44 @@ const ProductManagement = () => {
   const handleEdit = (product) => {
     setEditingProduct(product);
     setFormData({
-      name: product.name,
-      description: product.description,
-      price: product.price,
+      name: product.name || '',
+      description: product.description || '',
+      price: product.price || '',
       salePrice: product.salePrice || '',
-      stock: product.stock,
-      categoryId: product.categoryId,
+      stock: product.stock || '',
+      categoryId: product.categoryId || '',
       metaTitle: product.metaTitle || '',
       metaDescription: product.metaDescription || '',
-      featured: product.featured,
-      status: product.status
+      keywords: product.keywords || '',
+      slug: product.slug || '',
+      metaTags: product.metaTags || '',
+      featured: product.featured || false,
+      status: product.status || 'ACTIVE'
     });
 
-    // Load existing images
-    if (product.images) {
-      const existingImages = Array.isArray(product.images)
-        ? product.images.map((img, index) => ({
-            id: `existing-${index}`,
-            url: img.url || img,
-            name: `Image ${index + 1}`,
-            isNew: false
-          }))
-        : [{
-            id: 'existing-0',
-            url: product.images,
-            name: 'Product Image',
-            isNew: false
-          }];
-      setProductImages(existingImages);
-    } else {
-      setProductImages([]);
+    // Load existing images - prioritize productImages array from API
+    let existingImages = [];
+
+    if (product.productImages && Array.isArray(product.productImages)) {
+      // New format: productImages array from database
+      existingImages = product.productImages.map((img, index) => ({
+        id: `existing-${img.id}`,
+        url: img.url,
+        name: img.altText || `Image ${index + 1}`,
+        isNew: false
+      }));
+    } else if (product.images) {
+      // Legacy format: images field
+      const images = Array.isArray(product.images) ? product.images : [product.images];
+      existingImages = images.map((img, index) => ({
+        id: `existing-${index}`,
+        url: typeof img === 'string' ? img : img.url,
+        name: `Image ${index + 1}`,
+        isNew: false
+      }));
     }
+
+    setProductImages(existingImages);
 
     setShowModal(true);
   };
@@ -156,10 +182,7 @@ const ProductManagement = () => {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/products/${productId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await productAPI.deleteProduct(productId);
       fetchProducts();
       toast.success('Product deleted successfully!');
     } catch (error) {
@@ -170,12 +193,7 @@ const ProductManagement = () => {
 
   const toggleFeatured = async (productId, currentFeatured) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/products/${productId}`,
-        { featured: !currentFeatured },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await productAPI.updateProduct(productId, { featured: !currentFeatured });
 
       // Update local state
       setProducts(products.map(product =>
@@ -201,6 +219,9 @@ const ProductManagement = () => {
       categoryId: '',
       metaTitle: '',
       metaDescription: '',
+      keywords: '',
+      slug: '',
+      metaTags: '',
       featured: false,
       status: 'ACTIVE'
     });
@@ -213,9 +234,7 @@ const ProductManagement = () => {
     const name = prompt('Enter new product category name:');
     if (!name) return;
     try {
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories`, { name, type: 'PRODUCT' }, config);
+      const res = await categoryAPI.createCategory({ name, type: 'PRODUCT' });
       toast.success('Category created');
       // Refresh categories and preselect the new one
       await fetchCategories();
@@ -492,6 +511,48 @@ const ProductManagement = () => {
                     onChange={(e) => setFormData({...formData, metaDescription: e.target.value})}
                     rows={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="SEO description for search engines"
+                  />
+                </div>
+
+                {/* SEO Fields */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Keywords</label>
+                  <input
+                    type="text"
+                    value={formData.keywords}
+                    onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="football jersey, sports wear, team uniform, ..."
+                  />
+                  {formData.keywords && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Primary: <span className="font-semibold">{formData.keywords.split(',')[0].trim()}</span>,
+                      Secondary: <span className="font-semibold">{formData.keywords.split(',').slice(1).join(', ').trim()}</span>
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">URL Slug</label>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                    placeholder="auto-generated-product-slug"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">This will be the URL for your product. It's generated from the product name but can be edited.</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Meta Tags</label>
+                  <textarea
+                    value={formData.metaTags}
+                    onChange={(e) => setFormData({ ...formData, metaTags: e.target.value })}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter meta tags, separated by commas"
                   />
                 </div>
 
@@ -500,9 +561,10 @@ const ProductManagement = () => {
                   <ImageUpload
                     images={productImages}
                     onImagesChange={setProductImages}
-                    maxImages={2}
-                    label="Product Images (Front & Back View)"
+                    maxImages={1}
+                    label="Product Image"
                     maxSizeInMB={5}
+                    withAlt={true}
                   />
                 </div>
 

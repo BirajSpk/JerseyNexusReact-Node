@@ -2,6 +2,7 @@ const { asyncHandler, sendResponse, getPagination } = require('../utils/helpers'
 const WebSocketService = require('../utils/websocket');
 const orderService = require('../services/orderService');
 const { prisma, executeWithRetry } = require('../config/database');
+const { logError, logOrderEvent } = require('../utils/logger');
 
 // @desc    Get user orders
 // @route   GET /api/orders
@@ -205,7 +206,7 @@ const deleteOrder = asyncHandler(async (req, res) => {
       sendResponse(res, 200, true, result.message);
     }
   } catch (error) {
-    console.error('Delete order error:', error);
+    logError(error, { action: 'deleteOrder', orderId: req.params.id });
     sendResponse(res, 400, false, error.message);
   }
 });

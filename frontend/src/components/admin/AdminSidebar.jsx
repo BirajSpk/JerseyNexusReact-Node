@@ -1,6 +1,7 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
+import Logo from '../ui/Logo';
 
 const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
   const dispatch = useDispatch();
@@ -55,12 +56,13 @@ const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
       {/* Logo Section */}
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold">JN</span>
-          </div>
+          {isOpen ? (
+            <Logo size="md" animated={true} showText={true} variant="dark" />
+          ) : (
+            <Logo size="md" animated={true} showText={false} variant="dark" />
+          )}
           {isOpen && (
-            <div>
-              <h1 className="text-lg font-bold">JerseyNexus</h1>
+            <div className="ml-2">
               <p className="text-xs text-gray-400">Admin Panel</p>
             </div>
           )}

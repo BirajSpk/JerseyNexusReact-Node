@@ -117,23 +117,25 @@ class PaymentService {
         }
       });
 
-      // Update order payment status based on payment status
-      if (status === 'SUCCESS') {
-        await prisma.order.update({
-          where: { id: payment.orderId },
-          data: {
-            paymentStatus: 'PAID',
-            paymentId: payment.externalId,
-            status: 'CONFIRMED'
-          }
-        });
-      } else if (status === 'FAILED') {
-        await prisma.order.update({
-          where: { id: payment.orderId },
-          data: {
-            paymentStatus: 'FAILED'
-          }
-        });
+      // Update order payment status based on payment status (only if order exists)
+      if (payment.orderId) {
+        if (status === 'SUCCESS') {
+          await prisma.order.update({
+            where: { id: payment.orderId },
+            data: {
+              paymentStatus: 'PAID',
+              paymentId: payment.externalId,
+              status: 'CONFIRMED'
+            }
+          });
+        } else if (status === 'FAILED') {
+          await prisma.order.update({
+            where: { id: payment.orderId },
+            data: {
+              paymentStatus: 'FAILED'
+            }
+          });
+        }
       }
 
       return payment;

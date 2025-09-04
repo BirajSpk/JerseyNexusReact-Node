@@ -3,10 +3,11 @@ const { prisma, executeWithRetry } = require('../config/database');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const productsDir = path.join(__dirname, '..', 'uploads', 'products');
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, '../../uploads');
-const productsDir = path.join(uploadsDir, 'products');
+// const productsDir = path.join(uploadsDir, 'products');
 
 if (!fs.existsSync(productsDir)) {
   fs.mkdirSync(productsDir, { recursive: true });
@@ -157,15 +158,18 @@ const createProduct = asyncHandler(async (req, res) => {
         name,
         description,
         price,
+        salePrice,
         stock,
         categoryId,
         featured = false,
         status = 'ACTIVE',
         sizes,
         colors,
-        brand,
-        material,
-        tags
+        metaTitle,
+        metaDescription,
+        keywords,
+        slug: providedSlug,
+        metaTags
       } = req.body;
 
       // Validate required fields
@@ -182,7 +186,18 @@ const createProduct = asyncHandler(async (req, res) => {
         return sendResponse(res, 400, false, 'Category not found');
       }
 
-      const slug = generateSlug(name);
+      // Use provided slug or generate from name
+      let slug = providedSlug && providedSlug.trim().length > 0 ? generateSlug(providedSlug) : generateSlug(name);
+
+      // Check if slug already exists and make it unique
+      let slugExists = await prisma.product.findUnique({ where: { slug } });
+      let counter = 1;
+      while (slugExists) {
+        const baseSlug = providedSlug && providedSlug.trim().length > 0 ? generateSlug(providedSlug) : generateSlug(name);
+        slug = `${baseSlug}-${counter}`;
+        slugExists = await prisma.product.findUnique({ where: { slug } });
+        counter++;
+      }
 
       // Parse numeric values
       const parsedPrice = parseFloat(price);
@@ -203,6 +218,7 @@ const createProduct = asyncHandler(async (req, res) => {
             name,
             description: description || '',
             price: parsedPrice,
+            salePrice: salePrice ? parseFloat(salePrice) : null,
             stock: parsedStock,
             categoryId,
             slug,
@@ -210,9 +226,10 @@ const createProduct = asyncHandler(async (req, res) => {
             status: status || 'ACTIVE',
             sizes: sizes ? JSON.stringify(sizes) : null,
             colors: colors ? JSON.stringify(colors) : null,
-            brand: brand || null,
-            material: material || null,
-            tags: tags ? JSON.stringify(tags) : null
+            metaTitle: metaTitle || name,
+            metaDescription: metaDescription || description,
+            keywords: keywords || null,
+            metaTags: metaTags || null
           }
         });
 
@@ -244,7 +261,16 @@ const createProduct = asyncHandler(async (req, res) => {
       sendResponse(res, 201, true, 'Product created successfully', { product });
     } catch (error) {
       console.error('Product creation error:', error);
-      sendResponse(res, 500, false, 'Failed to create product');
+
+      // Handle specific Prisma errors
+      if (error.code === 'P2002') {
+        return sendResponse(res, 400, false, 'Product with this name already exists');
+      }
+      if (error.code === 'P2003') {
+        return sendResponse(res, 400, false, 'Invalid category ID');
+      }
+
+      sendResponse(res, 500, false, `Failed to create product: ${error.message}`);
     }
   });
 });
@@ -252,14 +278,14 @@ const createProduct = asyncHandler(async (req, res) => {
 // @desc    Update product with image upload
 // @route   PUT /api/products/:id
 // @access  Private/Admin
-const updateProduct = asyncHandler(async (req, res) => {
+ const updateProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  // Handle file upload first
+  // Handle file upload
   upload.array('images', 10)(req, res, async (err) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return sendResponse(res, 400, false, 'File too large. Maximum size is 5MB per file.');
+        return sendResponse(res, 400, false, 'File too large. Max 5MB per file.');
       }
       return sendResponse(res, 400, false, `Upload error: ${err.message}`);
     } else if (err) {
@@ -271,131 +297,123 @@ const updateProduct = asyncHandler(async (req, res) => {
         name,
         description,
         price,
+        salePrice,
         stock,
         categoryId,
         featured,
         status,
         sizes,
         colors,
-        brand,
-        material,
-        tags,
-        existingImages
+        metaTitle,
+        metaDescription,
+        keywords,
+        metaTags,
+        slug: providedSlug
       } = req.body;
 
       // Check if product exists
-      const existingProduct = await prisma.product.findUnique({
-        where: { id }
-      });
+      const existingProduct = await prisma.product.findUnique({ where: { id } });
+      if (!existingProduct) return sendResponse(res, 404, false, 'Product not found');
 
-      if (!existingProduct) {
-        return sendResponse(res, 404, false, 'Product not found');
-      }
+      // Start transaction
+      const updatedProduct = await prisma.$transaction(async (tx) => {
+        // Handle slug uniqueness
+        let newSlug = existingProduct.slug;
+        if (providedSlug !== undefined || name !== undefined) {
+          newSlug =
+            providedSlug && providedSlug.trim().length > 0
+              ? generateSlug(providedSlug)
+              : generateSlug(name || existingProduct.name);
 
-      // Validate category if provided
-      if (categoryId) {
-        const category = await prisma.category.findUnique({
-          where: { id: categoryId }
-        });
-
-        if (!category) {
-          return sendResponse(res, 400, false, 'Category not found');
-        }
-      }
-
-      // Update product with transaction to handle images
-      const product = await prisma.$transaction(async (tx) => {
-        // Prepare update data
-        const updateData = {};
-
-        if (name !== undefined) {
-          updateData.name = name;
-          updateData.slug = generateSlug(name);
-        }
-        if (description !== undefined) updateData.description = description;
-        if (price !== undefined) {
-          const parsedPrice = parseFloat(price);
-          if (isNaN(parsedPrice) || parsedPrice < 0) {
-            throw new Error('Invalid price value');
+          let slugExists = await tx.product.findFirst({
+            where: { slug: newSlug, id: { not: id } }
+          });
+          let counter = 1;
+          while (slugExists) {
+            const baseSlug =
+              providedSlug && providedSlug.trim().length > 0
+                ? generateSlug(providedSlug)
+                : generateSlug(name || existingProduct.name);
+            newSlug = `${baseSlug}-${counter}`;
+            slugExists = await tx.product.findFirst({
+              where: { slug: newSlug, id: { not: id } }
+            });
+            counter++;
           }
-          updateData.price = parsedPrice;
         }
-        if (stock !== undefined) {
-          const parsedStock = parseInt(stock);
-          if (isNaN(parsedStock) || parsedStock < 0) {
-            throw new Error('Invalid stock value');
-          }
-          updateData.stock = parsedStock;
-        }
-        if (categoryId !== undefined) updateData.categoryId = categoryId;
-        if (featured !== undefined) updateData.featured = featured === 'true' || featured === true;
-        if (status !== undefined) updateData.status = status;
-        if (sizes !== undefined) updateData.sizes = sizes ? JSON.stringify(sizes) : null;
-        if (colors !== undefined) updateData.colors = colors ? JSON.stringify(colors) : null;
-        if (brand !== undefined) updateData.brand = brand;
-        if (material !== undefined) updateData.material = material;
-        if (tags !== undefined) updateData.tags = tags ? JSON.stringify(tags) : null;
+
+        // Prepare data for update
+        const data = {
+          name,
+          description,
+          price: price !== undefined ? parseFloat(price) : undefined,
+          salePrice: salePrice ? parseFloat(salePrice) : null,
+          stock: stock !== undefined ? parseInt(stock) : undefined,
+          featured: featured !== undefined ? featured === 'true' || featured === true : undefined,
+          status,
+          sizes: sizes ? JSON.stringify(sizes) : null,
+          colors: colors ? JSON.stringify(colors) : null,
+          metaTitle,
+          metaDescription,
+          slug: newSlug,
+          keywords: keywords
+            ? Array.isArray(keywords)
+              ? keywords
+              : [keywords]
+            : undefined,
+          metaTags: metaTags
+            ? Array.isArray(metaTags)
+              ? metaTags
+              : [metaTags]
+            : undefined,
+          ...(categoryId ? { category: { connect: { id: categoryId } } } : {})
+        };
 
         // Update product
-        const updatedProduct = await tx.product.update({
+        const product = await tx.product.update({
           where: { id },
-          data: updateData
+          data
         });
 
-        // Handle image updates
+        // Handle images
         if (req.files && req.files.length > 0) {
-          // Delete old images if not in existingImages list
-          const currentImages = await tx.productImage.findMany({
-            where: { productId: id }
-          });
+          const currentImages = await tx.productImage.findMany({ where: { productId: id } });
 
-          const existingImageUrls = existingImages ? (Array.isArray(existingImages) ? existingImages : [existingImages]) : [];
-
-          // Delete images not in the existing list
-          const imagesToDelete = currentImages.filter(img => !existingImageUrls.includes(img.url));
-
-          for (const img of imagesToDelete) {
-            // Delete file from filesystem
+          // Delete old images
+          for (const img of currentImages) {
             const filename = path.basename(img.url);
             const filePath = path.join(productsDir, filename);
-            if (fs.existsSync(filePath)) {
-              fs.unlinkSync(filePath);
-            }
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
-            // Delete from database
-            await tx.productImage.delete({
-              where: { id: img.id }
-            });
+            await tx.productImage.delete({ where: { id: img.id } });
           }
 
           // Add new images
-          const newImageData = req.files.map((file, index) => ({
+          const newImages = req.files.map((file, index) => ({
             productId: id,
             url: `/uploads/products/${file.filename}`,
-            altText: `${updatedProduct.name} image ${index + 1}`,
-            sortOrder: existingImageUrls.length + index
+            altText: `${name || 'Product'} image ${index + 1}`,
+            isPrimary: index === 0,
+            sortOrder: index
           }));
 
-          await tx.productImage.createMany({
-            data: newImageData
-          });
+          await tx.productImage.createMany({ data: newImages });
         }
 
+        // Return updated product with relations
         return tx.product.findUnique({
           where: { id },
           include: {
             category: true,
-            productImages: {
-              orderBy: { sortOrder: 'asc' }
-            }
+            productImages: { orderBy: { sortOrder: 'asc' } }
           }
         });
       });
 
-      sendResponse(res, 200, true, 'Product updated successfully', { product });
+      sendResponse(res, 200, true, 'Product updated successfully', { product: updatedProduct });
     } catch (error) {
       console.error('Product update error:', error);
-      sendResponse(res, 500, false, 'Failed to update product');
+      sendResponse(res, 500, false, error.message || 'Failed to update product');
     }
   });
 });

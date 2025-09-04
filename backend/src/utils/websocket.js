@@ -11,11 +11,19 @@ class WebSocketService {
   }
 
   initialize(server) {
+    // Use the same CORS origins as HTTP server
+    const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || process.env.CORS || 'http://localhost:3000,http://localhost:3001')
+      .split(',')
+      .map(o => o.trim());
+
     this.io = new Server(server, {
       cors: {
-        origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
-        methods: ['GET', 'POST']
-      }
+        origin: ALLOWED_ORIGINS,
+        methods: ['GET', 'POST'],
+        credentials: true
+      },
+      allowEIO3: true,
+      transports: ['websocket', 'polling']
     });
 
     // Authentication middleware for socket connections

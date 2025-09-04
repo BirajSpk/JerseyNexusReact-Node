@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { generateToken } = require('../utils/auth');
-const { asyncHandler, sendResponse, generateSlug } = require('../utils/helpers');
+const { asyncHandler, sendResponse } = require('../utils/helpers');
 const { prisma, executeWithRetry } = require('../config/database');
 
 // @desc    Register user
@@ -8,7 +8,6 @@ const { prisma, executeWithRetry } = require('../config/database');
 // @access  Public
 const register = asyncHandler(async (req, res) => {
   const { name, email, phone, password, confirmPassword } = req.body;
-  console.table(req.body);
   // Validate required fields
   if (!name || !email || !password) {
     return sendResponse(res, 400, false, 'Name, email, and password are required');
