@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import ImageUpload from './ImageUpload';
 import toast from 'react-hot-toast';
 import { productAPI, categoryAPI } from '../../utils/api';
-import axios from 'axios';
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
@@ -45,12 +44,8 @@ const ProductManagement = () => {
 
   const fetchCategories = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
       // Request only PRODUCT categories
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories?type=PRODUCT`, config);
+      const response = await categoryAPI.getProductCategories();
       const allCategories = response.data.data?.categories || response.data.data || [];
       setCategories(allCategories);
     } catch (error) {
@@ -161,10 +156,7 @@ const ProductManagement = () => {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/products/${productId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await productAPI.deleteProduct(productId);
       fetchProducts();
       toast.success('Product deleted successfully!');
     } catch (error) {
@@ -175,12 +167,7 @@ const ProductManagement = () => {
 
   const toggleFeatured = async (productId, currentFeatured) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/products/${productId}`,
-        { featured: !currentFeatured },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await productAPI.updateProduct(productId, { featured: !currentFeatured });
 
       // Update local state
       setProducts(products.map(product =>
@@ -218,9 +205,7 @@ const ProductManagement = () => {
     const name = prompt('Enter new product category name:');
     if (!name) return;
     try {
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories`, { name, type: 'PRODUCT' }, config);
+      const res = await categoryAPI.createCategory({ name, type: 'PRODUCT' });
       toast.success('Category created');
       // Refresh categories and preselect the new one
       await fetchCategories();
@@ -508,6 +493,7 @@ const ProductManagement = () => {
                     maxImages={2}
                     label="Product Images (Front & Back View)"
                     maxSizeInMB={5}
+                    withAlt={true}
                   />
                 </div>
 

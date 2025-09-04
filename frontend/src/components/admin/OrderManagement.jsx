@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
+import { orderAPI } from '../../utils/api';
 
 const OrderManagement = () => {
   const [orders, setOrders] = useState([]);
@@ -18,10 +18,7 @@ const OrderManagement = () => {
 
   const fetchOrders = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/orders`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await orderAPI.getOrders();
       setOrders(response.data.data?.orders || response.data.data || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -34,12 +31,7 @@ const OrderManagement = () => {
 
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.put(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/orders/${orderId}`,
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await orderAPI.updateOrderStatus(orderId, { status: newStatus });
       
       // Update local state
       setOrders(orders.map(order => 
@@ -57,11 +49,7 @@ const OrderManagement = () => {
 
   const deleteOrder = async (orderId) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/orders/${orderId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await orderAPI.deleteOrder(orderId);
       
       // Update local state
       setOrders(orders.filter(order => order.id !== orderId));

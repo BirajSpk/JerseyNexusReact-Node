@@ -14,7 +14,9 @@ class WebSocketService {
     }
 
     this.token = token;
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+    // Use backend origin (strip /api suffix if provided)
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5003/api';
+    const API_URL = API_BASE.replace(/\/api\/?$/, '');
 
     this.socket = io(API_URL, {
       auth: {

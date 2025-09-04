@@ -52,7 +52,7 @@ const getBlog = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const createBlog = asyncHandler(async (req, res) => {
   try {
-    const { title, content, categoryId, published = false, status = 'DRAFT', imageUrl, existingFeaturedImage } = req.body;
+    const { title, content, categoryId, published = false, status = 'DRAFT', imageUrl, existingFeaturedImage, metaTitle, metaDescription, slug } = req.body;
     const authorId = req.user.id;
 
     // Validate required fields
@@ -78,7 +78,7 @@ const createBlog = asyncHandler(async (req, res) => {
       return sendResponse(res, 400, false, 'Category not found');
     }
 
-    const slug = generateSlug(title);
+    const computedSlug = slug && slug.trim().length > 0 ? generateSlug(slug) : generateSlug(title);
 
     // Handle featured image
     let featuredImageUrl = null;
@@ -99,10 +99,12 @@ const createBlog = asyncHandler(async (req, res) => {
         content,
         categoryId,
         authorId,
-        slug,
+        slug: computedSlug,
         published,
         status: published ? 'PUBLISHED' : status,
         featuredImage: featuredImageUrl,
+        metaTitle: metaTitle || title,
+        metaDescription: metaDescription || content?.substring(0, 160),
         images: featuredImageUrl ? JSON.stringify([{ url: featuredImageUrl, altText: title, isPrimary: true }]) : null
       },
       include: { category: true, author: { select: { name: true } } }
@@ -132,6 +134,16 @@ const updateBlog = asyncHandler(async (req, res) => {
   }
 
   const data = { ...rest };
+
+  if (rest.slug) {
+    data.slug = generateSlug(rest.slug);
+  }
+  if (rest.metaTitle) {
+    data.metaTitle = rest.metaTitle;
+  }
+  if (rest.metaDescription) {
+    data.metaDescription = rest.metaDescription;
+  }
 
   // Handle featured image update
   if (req.file) {

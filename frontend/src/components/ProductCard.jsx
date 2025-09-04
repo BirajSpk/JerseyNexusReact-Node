@@ -151,7 +151,7 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
         <div className="absolute top-3 left-3 flex flex-col space-y-2 z-10">
           {product.featured && (
             <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-              ⭐ Featured
+              Featured
             </span>
           )}
           {discountPercentage > 0 && (
@@ -161,7 +161,7 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
           )}
           {product.isNew && (
             <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-              🆕 New
+              New
             </span>
           )}
         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
+import { blogAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 import { Calendar, User, Tag, ArrowLeft } from 'lucide-react';
 import { getImageUrl } from '../utils/helpers';
@@ -19,7 +19,7 @@ const BlogDetail = () => {
 
   const fetchBlog = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/blogs/slug/${slug}`);
+      const response = await blogAPI.getBlogBySlug(slug);
       setBlog(response.data.data.blog);
 
       // Fetch related blogs
@@ -36,7 +36,7 @@ const BlogDetail = () => {
 
   const fetchRelatedBlogs = async (categoryId, currentBlogId) => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/blogs?categoryId=${categoryId}&limit=3`);
+      const response = await blogAPI.getBlogs({ categoryId, limit: 3 });
       const blogs = response.data.data?.blogs || response.data.data || [];
       setRelatedBlogs(blogs.filter(b => b.id !== currentBlogId));
     } catch (error) {
@@ -65,7 +65,7 @@ const BlogDetail = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Blog Not Found</h1>
-          <p className="text-gray-600 mb-8">The blog post you're looking for doesn't exist.</p>
+          <p className="text-gray-600 mb-8">The blog post you are looking for does not exist.</p>
           <Link to="/blogs" className="btn btn-primary">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Blogs

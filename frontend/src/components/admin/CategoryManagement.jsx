@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { categoryAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
 const CategoryManagement = () => {
@@ -16,8 +16,8 @@ const CategoryManagement = () => {
   });
 
   const categoryTypes = [
-    { value: 'PRODUCT', label: 'Product Categories', icon: '👕' },
-    { value: 'BLOG', label: 'Blog Categories', icon: '📝' }
+    { value: 'PRODUCT', label: 'Product Categories', icon: '' },
+    { value: 'BLOG', label: 'Blog Categories', icon: '' }
   ];
 
   useEffect(() => {
@@ -26,12 +26,7 @@ const CategoryManagement = () => {
 
   const fetchCategories = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories`, config);
+      const response = await categoryAPI.getCategories();
       setCategories(response.data.data?.categories || response.data.data || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -55,9 +50,9 @@ const CategoryManagement = () => {
       };
 
       if (editingCategory) {
-        await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories/${editingCategory.id}`, categoryData, config);
+        await categoryAPI.updateCategory(editingCategory.id, categoryData);
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories`, categoryData, config);
+        await categoryAPI.createCategory(categoryData);
       }
 
       fetchCategories();
@@ -86,10 +81,7 @@ const CategoryManagement = () => {
     if (!confirm('Are you sure you want to delete this category?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories/${categoryId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await categoryAPI.deleteCategory(categoryId);
       fetchCategories();
       toast.success('Category deleted successfully!');
     } catch (error) {

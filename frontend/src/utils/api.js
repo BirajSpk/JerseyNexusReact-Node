@@ -31,18 +31,33 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    const message = error.response?.data?.error || 'Something went wrong';
+    const status = error.response?.status;
+    const apiError = error.response?.data?.error;
+    const message = apiError || 'Something went wrong';
     const isLoginRequest = error.config?.url?.includes('/auth/login');
     const isRegisterRequest = error.config?.url?.includes('/auth/register');
 
-    if (error.response?.status === 401) {
-      // Don't redirect or show toast for login/register failures
-      if (!isLoginRequest && !isRegisterRequest) {
+    if (status === 401) {
+      // Distinguish between missing token, invalid token, and expired token
+      if (apiError === 'Missing token') {
+        // Likely a programming error where we forgot to attach the token
+        console.warn('Missing auth token for request:', error.config?.url);
+        toast.error('Authentication required. Please login.');
+      } else if (apiError === 'Invalid token') {
+        toast.error('Invalid session. Please login again.');
         localStorage.removeItem('token');
         window.location.href = '/login';
+      } else if (apiError === 'Token expired') {
         toast.error('Session expired. Please login again.');
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      } else {
+        // Generic unauthorized
+        if (!isLoginRequest && !isRegisterRequest) {
+          toast.error(message);
+        }
       }
-    } else if (error.response?.status >= 500) {
+    } else if (status >= 500) {
       toast.error('Server error. Please try again later.');
     } else {
       // Don't show toast for login/register errors - let the forms handle them
@@ -68,8 +83,11 @@ export const userAPI = {
   getProfile: () => api.get('/users/profile'),
   updateProfile: (data) => api.put('/users/profile', data),
   changePassword: (data) => api.put('/users/change-password', data),
+  // Admin endpoints
   getUsers: (params) => api.get('/users', { params }),
   getUserById: (id) => api.get(`/users/${id}`),
+  createUser: (data) => api.post('/users', data),
+  updateUser: (id, data) => api.put(`/users/${id}`, data),
   updateUserRole: (id, role) => api.put(`/users/${id}/role`, { role }),
   deleteUser: (id) => api.delete(`/users/${id}`),
   getUserStats: () => api.get('/users/stats'),

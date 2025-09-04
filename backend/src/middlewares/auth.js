@@ -14,7 +14,7 @@ const protect = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        error: 'Not authorized to access this route'
+        error: 'Missing token'
       });
     }
 
@@ -45,10 +45,12 @@ const protect = async (req, res, next) => {
       req.user = user;
       next();
     } catch (error) {
-      return res.status(401).json({
-        success: false,
-        error: 'Not authorized to access this route'
-      });
+      const message = error && error.name === 'TokenExpiredError'
+        ? 'Token expired'
+        : (error && error.name === 'JsonWebTokenError')
+          ? 'Invalid token'
+          : 'Not authorized to access this route';
+      return res.status(401).json({ success: false, error: message });
     }
   } catch (error) {
     next(error);

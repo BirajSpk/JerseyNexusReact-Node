@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { categoryAPI, blogAPI } from '../../utils/api';
 import ImageUpload from './ImageUpload';
 import toast from 'react-hot-toast';
 
@@ -18,6 +18,9 @@ const BlogManagement = () => {
     categoryId: '',
     metaTitle: '',
     metaDescription: '',
+    keywords: '',
+    metaTags: '',
+    slug: '',
     featured: false,
     status: 'DRAFT'
   });
@@ -33,14 +36,28 @@ const BlogManagement = () => {
     fetchBlogs();
     fetchCategories();
   }, []);
+useEffect(() => {
+    const toSlug = (str) => {
+      if (!str) return '';
+      return str
+        .toLowerCase()
+        .replace(/,/g, ' ')
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\s/g, '-');
+    };
+
+    // Only auto-generate slug if it's a new post or slug is empty
+    if (!editingBlog || !formData.slug) {
+      const newSlug = toSlug(formData.title || formData.keywords);
+      setFormData(prev => ({ ...prev, slug: newSlug }));
+    }
+  }, [formData.title, formData.keywords, editingBlog]);
 
   const fetchBlogs = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/blogs`, config);
+      const response = await blogAPI.getBlogs();
       setBlogs(response.data.data?.blogs || response.data.data || []);
     } catch (error) {
       console.error('Error fetching blogs:', error);
@@ -53,12 +70,8 @@ const BlogManagement = () => {
 
   const fetchCategories = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
       // Request only BLOG categories
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories?type=BLOG`, config);
+      const response = await categoryAPI.getBlogCategories();
       const allCategories = response.data.data?.categories || response.data.data || [];
       setCategories(allCategories);
     } catch (error) {
@@ -71,8 +84,6 @@ const BlogManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-
       // Create FormData for file uploads
       const submitData = new FormData();
 
@@ -93,18 +104,12 @@ const BlogManagement = () => {
         }
       }
 
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      };
-
+      // Use centralized API instance (token + headers handled by interceptor)
       if (editingBlog) {
-        await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/blogs/${editingBlog.id}`, submitData, config);
+        await blogAPI.updateBlog(editingBlog.id, submitData);
         toast.success('Blog updated successfully!');
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/blogs`, submitData, config);
+        await blogAPI.createBlog(submitData);
         toast.success('Blog created successfully!');
       }
 
@@ -126,6 +131,9 @@ const BlogManagement = () => {
       categoryId: blog.categoryId || '',
       metaTitle: blog.metaTitle || '',
       metaDescription: blog.metaDescription || '',
+      keywords: blog.keywords || '',
+      metaTags: blog.metaTags || '',
+      slug: blog.slug || '',
       featured: blog.featured || false,
       status: blog.status || 'DRAFT'
     });
@@ -149,10 +157,7 @@ const BlogManagement = () => {
     if (!confirm('Are you sure you want to delete this blog post?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/blogs/${blogId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await blogAPI.deleteBlog(blogId);
       fetchBlogs();
       alert('Blog deleted successfully!');
     } catch (error) {
@@ -169,6 +174,9 @@ const BlogManagement = () => {
       categoryId: '',
       metaTitle: '',
       metaDescription: '',
+      keywords: '',
+      metaTags: '',
+      slug: '',
       featured: false,
       status: 'DRAFT'
     });
@@ -181,9 +189,7 @@ const BlogManagement = () => {
     const name = prompt('Enter new blog category name:');
     if (!name) return;
     try {
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories`, { name, type: 'BLOG' }, config);
+      const res = await categoryAPI.createCategory({ name, type: 'BLOG' });
       toast.success('Category created');
       // Refresh categories and preselect the new one
       await fetchCategories();
@@ -287,7 +293,7 @@ const BlogManagement = () => {
                   </h3>
                   {blog.featured && (
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 mb-2">
-                      ⭐ Featured
+                      Featured
                     </span>
                   )}
                 </div>
@@ -315,13 +321,13 @@ const BlogManagement = () => {
                     onClick={() => handleEdit(blog)}
                     className="text-blue-600 hover:text-blue-800 text-sm"
                   >
-                    ✏️ Edit
+                    Edit
                   </button>
                   <button
                     onClick={() => handleDelete(blog.id)}
                     className="text-red-600 hover:text-red-800 text-sm"
                   >
-                    🗑️ Delete
+                    Delete
                   </button>
                 </div>
               </div>
@@ -332,7 +338,7 @@ const BlogManagement = () => {
 
       {filteredBlogs.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-4xl mb-4">📝</div>
+          <div className="text-4xl mb-4"></div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No blog posts found</h3>
           <p className="text-gray-500 mb-4">
             {searchTerm || selectedCategory ? 'Try adjusting your filters' : 'Get started by creating your first blog post'}
@@ -451,6 +457,45 @@ const BlogManagement = () => {
                     placeholder="SEO description"
                   />
                 </div>
+<div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Keywords</label>
+                  <input
+                    type="text"
+                    value={formData.keywords}
+                    onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Primary keyword, secondary keyword, ..."
+                  />
+                  {formData.keywords && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Primary: <span className="font-semibold">{formData.keywords.split(',')[0].trim()}</span>,
+                      Secondary: <span className="font-semibold">{formData.keywords.split(',').slice(1).join(', ').trim()}</span>
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">URL Slug</label>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                    placeholder="auto-generated-slug"
+                  />
+                   <p className="text-xs text-gray-500 mt-1">This will be the URL for your blog post. It's generated from keywords but can be edited.</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Meta Tags</label>
+                  <textarea
+                    value={formData.metaTags}
+                    onChange={(e) => setFormData({ ...formData, metaTags: e.target.value })}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter meta tags, separated by commas"
+                  />
+                </div>
 
                 {/* Blog Featured Image Upload */}
                 <div>
@@ -459,6 +504,7 @@ const BlogManagement = () => {
                     onImagesChange={setBlogImage}
                     maxImages={1}
                     label="Featured Image"
+                        withAlt={true}
                     maxSizeInMB={5}
                   />
                 </div>

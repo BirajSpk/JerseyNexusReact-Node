@@ -66,14 +66,14 @@ const cartReducer = (state = initialStateWithTotals, action) => {
       if (product.productImages && Array.isArray(product.productImages) && product.productImages.length > 0) {
         const firstImage = product.productImages[0];
         productImage = firstImage.url;
-        if (productImage && !productImage.startsWith('http')) {
+        if (productImage && !productImage.startsWith('http') && !productImage.startsWith('data:')) {
           productImage = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5003'}${productImage}`;
         }
       } else if (product.images) {
         // Handle legacy images field
         if (typeof product.images === 'string') {
           productImage = product.images;
-          if (!productImage.startsWith('http')) {
+          if (!productImage.startsWith('http') && !productImage.startsWith('data:')) {
             productImage = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5003'}${productImage}`;
           }
         } else if (Array.isArray(product.images) && product.images.length > 0) {
@@ -84,7 +84,7 @@ const cartReducer = (state = initialStateWithTotals, action) => {
           } else if (firstImage && firstImage.url) {
             productImage = firstImage.url;
           }
-          if (productImage && !productImage.startsWith('http')) {
+          if (productImage && !productImage.startsWith('http') && !productImage.startsWith('data:')) {
             productImage = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5003'}${productImage}`;
           }
         }
