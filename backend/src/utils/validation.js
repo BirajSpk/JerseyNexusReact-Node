@@ -115,17 +115,61 @@ const validateReview = [
 // Blog validation
 const validateBlog = [
   body('title')
+    .optional()
     .trim()
     .isLength({ min: 5, max: 200 })
     .withMessage('Blog title must be between 5 and 200 characters'),
   body('content')
+    .optional()
     .trim()
     .isLength({ min: 10 })
     .withMessage('Blog content must be at least 10 characters'),
   body('categoryId')
+    .optional()
     .notEmpty()
     .withMessage('Category is required'),
-  validateRequest
+  (req, res, next) => {
+    // Custom validation for FormData
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: errors.array().map(error => ({
+          field: error.param,
+          message: error.msg,
+          value: error.value
+        }))
+      });
+    }
+
+    // Additional validation for required fields when they exist
+    const { title, content, categoryId } = req.body;
+
+    if (title !== undefined && (!title || title.trim().length < 5 || title.trim().length > 200)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Blog title must be between 5 and 200 characters'
+      });
+    }
+
+    if (content !== undefined && (!content || content.trim().length < 10)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Blog content must be at least 10 characters'
+      });
+    }
+
+    if (categoryId !== undefined && !categoryId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Category is required'
+      });
+    }
+
+    next();
+  }
 ];
 
 module.exports = {

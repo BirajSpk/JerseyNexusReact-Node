@@ -6,7 +6,7 @@ const { prisma, executeWithRetry } = require('../config/database');
 // @access  Public
 const getBlogs = asyncHandler(async (req, res) => {
   const blogs = await prisma.blog.findMany({
-    where: { published: true },
+    // where: { published: true },
     include: {
       category: { select: { name: true, slug: true } },
       author: { select: { name: true, avatar: true } }
@@ -52,9 +52,11 @@ const getBlog = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const createBlog = asyncHandler(async (req, res) => {
   try {
-    const { title, content, categoryId, published = false, status = 'DRAFT', imageUrl, existingFeaturedImage, metaTitle, metaDescription, slug, keywords, metaTags } = req.body;
+    console.log("creating blog ");
+    const { title, content, categoryId, published = false, status = 'DRAFT', imageUrl, existingFeaturedImage, metaTitle, metaDescription, slug, keywords, metaTags, excerpt } = req.body;
     const authorId = req.user.id;
 
+      console.table(req.body);
     // Validate required fields
     if (!title || !content || !categoryId) {
       return sendResponse(res, 400, false, 'Missing required fields: title, content, categoryId');
@@ -105,13 +107,14 @@ const createBlog = asyncHandler(async (req, res) => {
         featuredImage: featuredImageUrl,
         metaTitle: metaTitle || title,
         metaDescription: metaDescription || content?.substring(0, 160),
-        keywords: keywords || null,
-        metaTags: metaTags || null,
+        keyword: keywords ? keywords.split(',').map(k => k.trim()).filter(k => k.length > 0) : [],
+        metaTags : metaTags || null,
         images: featuredImageUrl ? JSON.stringify([{ url: featuredImageUrl, altText: title, isPrimary: true }]) : null
       },
       include: { category: true, author: { select: { name: true } } }
     });
 
+    console.log("Blog is created successfully")
     sendResponse(res, 201, true, 'Blog created successfully', { blog });
   } catch (error) {
     console.error('Blog creation error:', error);
@@ -135,7 +138,15 @@ const updateBlog = asyncHandler(async (req, res) => {
     return sendResponse(res, 404, false, 'Blog not found');
   }
 
-  const data = { ...rest };
+  // Only include valid fields for blog update
+  const validFields = ['title', 'content', 'categoryId', 'published', 'status', 'metaTitle', 'metaDescription', 'slug', 'keywords', 'metaTags'];
+  const data = {};
+
+  validFields.forEach(field => {
+    if (rest[field] !== undefined) {
+      data[field] = rest[field];
+    }
+  });
 
   if (rest.slug) {
     data.slug = generateSlug(rest.slug);
@@ -147,7 +158,9 @@ const updateBlog = asyncHandler(async (req, res) => {
     data.metaDescription = rest.metaDescription;
   }
   if (rest.keywords) {
-    data.keywords = rest.keywords;
+    data.keyword = typeof rest.keywords === 'string'
+      ? rest.keywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+      : rest.keywords;
   }
   if (rest.metaTags) {
     data.metaTags = rest.metaTags;

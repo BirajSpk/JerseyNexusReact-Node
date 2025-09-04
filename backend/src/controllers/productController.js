@@ -3,10 +3,11 @@ const { prisma, executeWithRetry } = require('../config/database');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const productsDir = path.join(__dirname, '..', 'uploads', 'products');
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, '../../uploads');
-const productsDir = path.join(uploadsDir, 'products');
+// const productsDir = path.join(uploadsDir, 'products');
 
 if (!fs.existsSync(productsDir)) {
   fs.mkdirSync(productsDir, { recursive: true });
@@ -277,14 +278,14 @@ const createProduct = asyncHandler(async (req, res) => {
 // @desc    Update product with image upload
 // @route   PUT /api/products/:id
 // @access  Private/Admin
-const updateProduct = asyncHandler(async (req, res) => {
+ const updateProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  // Handle file upload first
+  // Handle file upload
   upload.array('images', 10)(req, res, async (err) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return sendResponse(res, 400, false, 'File too large. Maximum size is 5MB per file.');
+        return sendResponse(res, 400, false, 'File too large. Max 5MB per file.');
       }
       return sendResponse(res, 400, false, `Upload error: ${err.message}`);
     } else if (err) {
@@ -306,148 +307,113 @@ const updateProduct = asyncHandler(async (req, res) => {
         metaTitle,
         metaDescription,
         keywords,
-        slug: providedSlug,
         metaTags,
-        existingImages
+        slug: providedSlug
       } = req.body;
 
       // Check if product exists
-      const existingProduct = await prisma.product.findUnique({
-        where: { id }
-      });
+      const existingProduct = await prisma.product.findUnique({ where: { id } });
+      if (!existingProduct) return sendResponse(res, 404, false, 'Product not found');
 
-      if (!existingProduct) {
-        return sendResponse(res, 404, false, 'Product not found');
-      }
-
-      // Validate category if provided
-      if (categoryId) {
-        const category = await prisma.category.findUnique({
-          where: { id: categoryId }
-        });
-
-        if (!category) {
-          return sendResponse(res, 400, false, 'Category not found');
-        }
-      }
-
-      // Update product with transaction to handle images
-      const product = await prisma.$transaction(async (tx) => {
-        // Prepare update data
-        const updateData = {};
-
-        if (name !== undefined) {
-          updateData.name = name;
-        }
-
-        // Handle slug update with uniqueness check
+      // Start transaction
+      const updatedProduct = await prisma.$transaction(async (tx) => {
+        // Handle slug uniqueness
+        let newSlug = existingProduct.slug;
         if (providedSlug !== undefined || name !== undefined) {
-          let newSlug = providedSlug && providedSlug.trim().length > 0 ? generateSlug(providedSlug) : generateSlug(name || existingProduct.name);
+          newSlug =
+            providedSlug && providedSlug.trim().length > 0
+              ? generateSlug(providedSlug)
+              : generateSlug(name || existingProduct.name);
 
-          // Check if slug already exists (excluding current product)
           let slugExists = await tx.product.findFirst({
-            where: {
-              slug: newSlug,
-              id: { not: id }
-            }
+            where: { slug: newSlug, id: { not: id } }
           });
           let counter = 1;
           while (slugExists) {
-            const baseSlug = providedSlug && providedSlug.trim().length > 0 ? generateSlug(providedSlug) : generateSlug(name || existingProduct.name);
+            const baseSlug =
+              providedSlug && providedSlug.trim().length > 0
+                ? generateSlug(providedSlug)
+                : generateSlug(name || existingProduct.name);
             newSlug = `${baseSlug}-${counter}`;
             slugExists = await tx.product.findFirst({
-              where: {
-                slug: newSlug,
-                id: { not: id }
-              }
+              where: { slug: newSlug, id: { not: id } }
             });
             counter++;
           }
-          updateData.slug = newSlug;
         }
-        if (description !== undefined) updateData.description = description;
-        if (price !== undefined) {
-          const parsedPrice = parseFloat(price);
-          if (isNaN(parsedPrice) || parsedPrice < 0) {
-            throw new Error('Invalid price value');
-          }
-          updateData.price = parsedPrice;
-        }
-        if (stock !== undefined) {
-          const parsedStock = parseInt(stock);
-          if (isNaN(parsedStock) || parsedStock < 0) {
-            throw new Error('Invalid stock value');
-          }
-          updateData.stock = parsedStock;
-        }
-        if (categoryId !== undefined) updateData.categoryId = categoryId;
-        if (featured !== undefined) updateData.featured = featured === 'true' || featured === true;
-        if (status !== undefined) updateData.status = status;
-        if (sizes !== undefined) updateData.sizes = sizes ? JSON.stringify(sizes) : null;
-        if (colors !== undefined) updateData.colors = colors ? JSON.stringify(colors) : null;
-        if (salePrice !== undefined) updateData.salePrice = salePrice ? parseFloat(salePrice) : null;
-        if (metaTitle !== undefined) updateData.metaTitle = metaTitle;
-        if (metaDescription !== undefined) updateData.metaDescription = metaDescription;
-        if (keywords !== undefined) updateData.keywords = keywords;
-        if (metaTags !== undefined) updateData.metaTags = metaTags;
+
+        // Prepare data for update
+        const data = {
+          name,
+          description,
+          price: price !== undefined ? parseFloat(price) : undefined,
+          salePrice: salePrice ? parseFloat(salePrice) : null,
+          stock: stock !== undefined ? parseInt(stock) : undefined,
+          featured: featured !== undefined ? featured === 'true' || featured === true : undefined,
+          status,
+          sizes: sizes ? JSON.stringify(sizes) : null,
+          colors: colors ? JSON.stringify(colors) : null,
+          metaTitle,
+          metaDescription,
+          slug: newSlug,
+          keywords: keywords
+            ? Array.isArray(keywords)
+              ? keywords
+              : [keywords]
+            : undefined,
+          metaTags: metaTags
+            ? Array.isArray(metaTags)
+              ? metaTags
+              : [metaTags]
+            : undefined,
+          ...(categoryId ? { category: { connect: { id: categoryId } } } : {})
+        };
 
         // Update product
-        const updatedProduct = await tx.product.update({
+        const product = await tx.product.update({
           where: { id },
-          data: updateData
+          data
         });
 
-        // Handle image updates
+        // Handle images
         if (req.files && req.files.length > 0) {
-          // When new images are uploaded, completely replace all existing images
-          const currentImages = await tx.productImage.findMany({
-            where: { productId: id }
-          });
+          const currentImages = await tx.productImage.findMany({ where: { productId: id } });
 
-          // Delete all existing images
+          // Delete old images
           for (const img of currentImages) {
-            // Delete file from filesystem
             const filename = path.basename(img.url);
             const filePath = path.join(productsDir, filename);
-            if (fs.existsSync(filePath)) {
-              fs.unlinkSync(filePath);
-            }
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
-            // Delete from database
-            await tx.productImage.delete({
-              where: { id: img.id }
-            });
+            await tx.productImage.delete({ where: { id: img.id } });
           }
 
           // Add new images
-          const newImageData = req.files.map((file, index) => ({
+          const newImages = req.files.map((file, index) => ({
             productId: id,
             url: `/uploads/products/${file.filename}`,
             altText: `${name || 'Product'} image ${index + 1}`,
-            isPrimary: index === 0, // First image is primary
+            isPrimary: index === 0,
             sortOrder: index
           }));
 
-          await tx.productImage.createMany({
-            data: newImageData
-          });
+          await tx.productImage.createMany({ data: newImages });
         }
 
+        // Return updated product with relations
         return tx.product.findUnique({
           where: { id },
           include: {
             category: true,
-            productImages: {
-              orderBy: { sortOrder: 'asc' }
-            }
+            productImages: { orderBy: { sortOrder: 'asc' } }
           }
         });
       });
 
-      sendResponse(res, 200, true, 'Product updated successfully', { product });
+      sendResponse(res, 200, true, 'Product updated successfully', { product: updatedProduct });
     } catch (error) {
       console.error('Product update error:', error);
-      sendResponse(res, 500, false, 'Failed to update product');
+      sendResponse(res, 500, false, error.message || 'Failed to update product');
     }
   });
 });

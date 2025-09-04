@@ -219,8 +219,10 @@ model Blog {
   // Images as simple text field (JSON string)
   images String? // JSON string of array: [{url: string, altText: string, isPrimary: boolean}]
 
+  keyword String[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  metaTags String?
 
   // Relations
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
