@@ -2,7 +2,7 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 
-const AdminHeader = ({ toggleSidebar, sidebarOpen }) => {
+const AdminHeader = ({ toggleSidebar }) => {
   const { user } = useSelector((state) => state.auth);
 
   return (
@@ -40,18 +40,7 @@ const AdminHeader = ({ toggleSidebar, sidebarOpen }) => {
             <span>View Website</span>
           </Link>
 
-          {/* Notifications */}
-          <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
-            <span className="text-xl">🔔</span>
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-              3
-            </span>
-          </button>
 
-          {/* Quick Actions */}
-          <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
-            <span className="text-xl">⚙️</span>
-          </button>
 
           {/* User Profile */}
           <div className="flex items-center space-x-3 pl-4 border-l border-gray-200">

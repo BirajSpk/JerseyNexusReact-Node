@@ -19,6 +19,9 @@
     "connection:test": "node scripts/testConnection.js",
     "setup": "npm run db:generate && npm run db:migrate && npm run db:seed"
   },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "dependencies": {
     "@prisma/client": "^5.7.1",
     "bcryptjs": "^2.4.3",

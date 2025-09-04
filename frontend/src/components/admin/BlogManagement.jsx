@@ -40,7 +40,7 @@ const BlogManagement = () => {
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/blogs`, config);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/blogs`, config);
       setBlogs(response.data.data?.blogs || response.data.data || []);
     } catch (error) {
       console.error('Error fetching blogs:', error);
@@ -101,10 +101,10 @@ const BlogManagement = () => {
       };
 
       if (editingBlog) {
-        await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/blogs/${editingBlog.id}`, submitData, config);
+        await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/blogs/${editingBlog.id}`, submitData, config);
         toast.success('Blog updated successfully!');
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/blogs`, submitData, config);
+        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/blogs`, submitData, config);
         toast.success('Blog created successfully!');
       }
 
@@ -120,14 +120,14 @@ const BlogManagement = () => {
   const handleEdit = (blog) => {
     setEditingBlog(blog);
     setFormData({
-      title: blog.title,
-      content: blog.content,
-      excerpt: blog.excerpt,
-      categoryId: blog.categoryId,
+      title: blog.title || '',
+      content: blog.content || '',
+      excerpt: blog.excerpt || '',
+      categoryId: blog.categoryId || '',
       metaTitle: blog.metaTitle || '',
       metaDescription: blog.metaDescription || '',
-      featured: blog.featured,
-      status: blog.status
+      featured: blog.featured || false,
+      status: blog.status || 'DRAFT'
     });
 
     // Load existing featured image
@@ -150,7 +150,7 @@ const BlogManagement = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/blogs/${blogId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/blogs/${blogId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchBlogs();

@@ -74,7 +74,7 @@ model Product {
   updatedAt DateTime @updatedAt
 
   // Relations
-  category   Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category   Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   orderItems OrderItem[]
   reviews    Review[]
   productImages ProductImage[] // New relation for multiple images
@@ -212,6 +212,9 @@ model Blog {
   metaTitle       String?
   metaDescription String?
   slug            String  @unique
+
+  // Featured image for blog posts
+  featuredImage String? // URL to the featured image
 
   // Images as simple text field (JSON string)
   images String? // JSON string of array: [{url: string, altText: string, isPrimary: boolean}]

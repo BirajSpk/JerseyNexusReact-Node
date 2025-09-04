@@ -102,7 +102,11 @@ const ProductManagement = () => {
         toast.success('Product created successfully!');
       }
 
-      fetchProducts();
+      // Small delay to ensure backend processing is complete
+      setTimeout(() => {
+        fetchProducts();
+      }, 500);
+
       resetForm();
       setShowModal(false);
     } catch (error) {
@@ -114,37 +118,41 @@ const ProductManagement = () => {
   const handleEdit = (product) => {
     setEditingProduct(product);
     setFormData({
-      name: product.name,
-      description: product.description,
-      price: product.price,
+      name: product.name || '',
+      description: product.description || '',
+      price: product.price || '',
       salePrice: product.salePrice || '',
-      stock: product.stock,
-      categoryId: product.categoryId,
+      stock: product.stock || '',
+      categoryId: product.categoryId || '',
       metaTitle: product.metaTitle || '',
       metaDescription: product.metaDescription || '',
-      featured: product.featured,
-      status: product.status
+      featured: product.featured || false,
+      status: product.status || 'ACTIVE'
     });
 
-    // Load existing images
-    if (product.images) {
-      const existingImages = Array.isArray(product.images)
-        ? product.images.map((img, index) => ({
-            id: `existing-${index}`,
-            url: img.url || img,
-            name: `Image ${index + 1}`,
-            isNew: false
-          }))
-        : [{
-            id: 'existing-0',
-            url: product.images,
-            name: 'Product Image',
-            isNew: false
-          }];
-      setProductImages(existingImages);
-    } else {
-      setProductImages([]);
+    // Load existing images - prioritize productImages array from API
+    let existingImages = [];
+
+    if (product.productImages && Array.isArray(product.productImages)) {
+      // New format: productImages array from database
+      existingImages = product.productImages.map((img, index) => ({
+        id: `existing-${img.id}`,
+        url: img.url,
+        name: img.altText || `Image ${index + 1}`,
+        isNew: false
+      }));
+    } else if (product.images) {
+      // Legacy format: images field
+      const images = Array.isArray(product.images) ? product.images : [product.images];
+      existingImages = images.map((img, index) => ({
+        id: `existing-${index}`,
+        url: typeof img === 'string' ? img : img.url,
+        name: `Image ${index + 1}`,
+        isNew: false
+      }));
     }
+
+    setProductImages(existingImages);
 
     setShowModal(true);
   };

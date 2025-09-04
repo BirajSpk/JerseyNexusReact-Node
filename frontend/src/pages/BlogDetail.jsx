@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Calendar, User, Tag, ArrowLeft } from 'lucide-react';
+import { getImageUrl } from '../utils/helpers';
 
 const BlogDetail = () => {
   const { slug } = useParams();

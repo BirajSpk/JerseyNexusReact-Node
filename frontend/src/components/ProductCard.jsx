@@ -38,7 +38,7 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
 
   const handleViewProduct = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    navigate(`/products/${product.id}`);
+    navigate(`/products/${product.slug || product.id}`);
   };
 
   const handleToggleWishlist = (e) => {
@@ -74,24 +74,37 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
   const productImages = (() => {
     // New format from API: productImages table
     if (product.productImages && Array.isArray(product.productImages)) {
-      return product.productImages;
+      return product.productImages.map(img => ({
+        url: getImageUrl(img.url),
+        altText: img.altText || product.name,
+        isPrimary: img.isPrimary,
+        sortOrder: img.sortOrder
+      }));
     }
     // Already normalized array (e.g., FeaturedProducts processed props)
     if (Array.isArray(product.images)) {
-      return product.images;
+      return product.images.map(img => ({
+        url: getImageUrl(typeof img === 'string' ? img : img.url),
+        altText: typeof img === 'string' ? product.name : (img.altText || product.name)
+      }));
     }
     // Legacy JSON string
     if (typeof product.images === 'string') {
       try {
         const parsed = JSON.parse(product.images);
-        return Array.isArray(parsed) ? parsed : [];
+        if (Array.isArray(parsed)) {
+          return parsed.map(img => ({
+            url: getImageUrl(typeof img === 'string' ? img : img.url),
+            altText: typeof img === 'string' ? product.name : (img.altText || product.name)
+          }));
+        }
       } catch {
         // ignore
       }
     }
     // Fallback single image field
     if (product.image) {
-      return [{ url: product.image }];
+      return [{ url: getImageUrl(product.image), altText: product.name }];
     }
     return [];
   })();
@@ -104,9 +117,15 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      whileHover={{
+        y: -8,
+        scale: 1.02,
+        transition: { duration: 0.3, ease: "easeOut" }
+      }}
+      whileTap={{ scale: 0.98 }}
       transition={{ delay: index * 0.05 }}
       onClick={handleViewProduct}
-      className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group hover:shadow-xl hover:border-primary/20 transition-all duration-300 cursor-pointer
+      className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group hover:shadow-2xl hover:border-primary/30 transition-all duration-300 cursor-pointer
         ${viewMode === 'list' ? 'flex flex-row' : 'flex flex-col h-full'}
       `}
     >
@@ -116,22 +135,17 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
           viewMode === 'list' ? 'w-48 h-48 flex-shrink-0' : 'aspect-square w-full'
         }`}
       >
-        {/* Front image */}
+        {/* Product image */}
         <img
-          src={getImageUrl(productImages[0]?.url) || fallbackImage}
+          src={productImages[0]?.url || fallbackImage}
           alt={productImages[0]?.altText || product.name}
-          className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-0"
+          className="w-full h-full object-cover"
           loading="lazy"
+          onError={(e) => {
+            e.target.src = fallbackImage;
+          }}
         />
-        {/* Back image (on hover) */}
-        {productImages[1]?.url && (
-          <img
-            src={getImageUrl(productImages[1]?.url)}
-            alt={productImages[1]?.altText || `${product.name} back`}
-            className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-            loading="lazy"
-          />
-        )}
+
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col space-y-2 z-10">

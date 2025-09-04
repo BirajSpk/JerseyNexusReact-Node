@@ -37,7 +37,7 @@ const ProductDetail = () => {
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [processedImages, setProcessedImages] = useState([]);
-  // No image index needed for single image
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('description');
   
 
@@ -48,30 +48,41 @@ const ProductDetail = () => {
 
       setLoading(true);
       try {
-        const response = await productAPI.getProductById(id);
-          console.log("the rsponse is " , response)
+        // Try to determine if id is a slug or actual ID
+        let response;
+        // CUID format: starts with 'cmf' and is longer than 20 characters
+        const isProductId = id.startsWith('cmf') && id.length > 20;
+        if (isProductId) {
+          // It's a CUID ID
+          response = await productAPI.getProductById(id);
+        } else {
+          // It's a slug (dash-separated words)
+          response = await productAPI.getProductBySlug(id);
+        }
         if (response.data.success) {
           const productData = response.data.data.product;
-              console.log("The product data is " , productData);
           // Check if product data is empty or null
           if (!productData || Object.keys(productData).length === 0) {
             throw new Error('Product not found');
           }
 
           // Process images - handle both string arrays and object arrays
-          console.log('Raw product images:', productData.productImages);
           let processedImages = [];
 
           if (productData.productImages && Array.isArray(productData.productImages) && productData.productImages.length > 0) {
             // Images are now an array of image objects from ProductImage table
-            processedImages = productData.productImages.map(image => ({
-              url: getImageUrl(image.url),
-              altText: image.altText || productData.name || 'Product Image'
-            }));
+            processedImages = productData.productImages
+              .sort((a, b) => a.sortOrder - b.sortOrder) // Sort by sortOrder
+              .map(image => ({
+                url: getImageUrl(image.url),
+                altText: image.altText || productData.name || 'Product Image',
+                isPrimary: image.isPrimary,
+                sortOrder: image.sortOrder
+              }));
           } else {
             // Fallback to placeholder if no images
             processedImages = [{
-              url: '/placeholder-product.jpg',
+              url: 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image',
               altText: 'Product Image'
             }];
           }
@@ -266,8 +277,8 @@ const ProductDetail = () => {
           {/* Main Image with Zoom */}
           <div className="relative mb-4">
             <ImageZoom
-              src={processedImages?.[0]?.url || 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image'}
-              alt={processedImages?.[0]?.altText || product.name}
+              src={processedImages?.[selectedImageIndex]?.url || 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image'}
+              alt={processedImages?.[selectedImageIndex]?.altText || product.name}
               className="w-full aspect-square rounded-lg"
             />
             {product.isNew && (
@@ -280,8 +291,50 @@ const ProductDetail = () => {
                 {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
               </span>
             )}
+            {/* Image counter */}
+            {processedImages.length > 1 && (
+              <div className="absolute bottom-4 right-4 bg-black/50 text-white px-2 py-1 rounded text-sm">
+                {selectedImageIndex + 1} / {processedImages.length}
+              </div>
+            )}
           </div>
-          {/* No thumbnail gallery needed for single image */}
+
+          {/* Image Thumbnails */}
+          {processedImages.length > 1 && (
+            <div className="grid grid-cols-4 gap-2">
+              {processedImages.map((image, index) => (
+                <motion.button
+                  key={index}
+                  onClick={() => setSelectedImageIndex(index)}
+                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                    selectedImageIndex === index
+                      ? 'border-primary shadow-lg'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <img
+                    src={image.url}
+                    alt={image.altText}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = 'https://placehold.co/150x150/e5e7eb/6b7280?text=Image';
+                    }}
+                  />
+                  {selectedImageIndex === index && (
+                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
+                </motion.button>
+              ))}
+            </div>
+          )}
         </motion.div>
 
         {/* Product Details */}

@@ -31,7 +31,7 @@ const CategoryManagement = () => {
         headers: { Authorization: `Bearer ${token}` }
       };
 
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories`, config);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories`, config);
       setCategories(response.data.data?.categories || response.data.data || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -55,9 +55,9 @@ const CategoryManagement = () => {
       };
 
       if (editingCategory) {
-        await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories/${editingCategory.id}`, categoryData, config);
+        await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories/${editingCategory.id}`, categoryData, config);
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories`, categoryData, config);
+        await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories`, categoryData, config);
       }
 
       fetchCategories();
@@ -87,7 +87,7 @@ const CategoryManagement = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/categories/${categoryId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5003/api'}/categories/${categoryId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchCategories();

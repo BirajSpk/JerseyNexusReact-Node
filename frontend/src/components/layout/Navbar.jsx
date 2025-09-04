@@ -194,8 +194,21 @@ const Navbar = () => {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-2 p-2 text-muted hover:text-primary transition-colors"
                 >
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-medium">
-                    {user?.name?.charAt(0)?.toUpperCase()}
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-primary flex items-center justify-center">
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5003'}${user.avatar}`}
+                        alt={user?.name || 'Profile'}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <span className={`text-white text-sm font-medium ${user?.avatar ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
+                      {user?.name?.charAt(0)?.toUpperCase()}
+                    </span>
                   </div>
                   <span className="hidden md:block font-medium">{user?.name}</span>
                 </button>

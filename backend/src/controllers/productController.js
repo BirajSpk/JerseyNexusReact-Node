@@ -157,15 +157,15 @@ const createProduct = asyncHandler(async (req, res) => {
         name,
         description,
         price,
+        salePrice,
         stock,
         categoryId,
         featured = false,
         status = 'ACTIVE',
         sizes,
         colors,
-        brand,
-        material,
-        tags
+        metaTitle,
+        metaDescription
       } = req.body;
 
       // Validate required fields
@@ -182,7 +182,16 @@ const createProduct = asyncHandler(async (req, res) => {
         return sendResponse(res, 400, false, 'Category not found');
       }
 
-      const slug = generateSlug(name);
+      let slug = generateSlug(name);
+
+      // Check if slug already exists and make it unique
+      let slugExists = await prisma.product.findUnique({ where: { slug } });
+      let counter = 1;
+      while (slugExists) {
+        slug = `${generateSlug(name)}-${counter}`;
+        slugExists = await prisma.product.findUnique({ where: { slug } });
+        counter++;
+      }
 
       // Parse numeric values
       const parsedPrice = parseFloat(price);
@@ -203,6 +212,7 @@ const createProduct = asyncHandler(async (req, res) => {
             name,
             description: description || '',
             price: parsedPrice,
+            salePrice: salePrice ? parseFloat(salePrice) : null,
             stock: parsedStock,
             categoryId,
             slug,
@@ -210,9 +220,8 @@ const createProduct = asyncHandler(async (req, res) => {
             status: status || 'ACTIVE',
             sizes: sizes ? JSON.stringify(sizes) : null,
             colors: colors ? JSON.stringify(colors) : null,
-            brand: brand || null,
-            material: material || null,
-            tags: tags ? JSON.stringify(tags) : null
+            metaTitle: metaTitle || name,
+            metaDescription: metaDescription || description
           }
         });
 
@@ -244,7 +253,16 @@ const createProduct = asyncHandler(async (req, res) => {
       sendResponse(res, 201, true, 'Product created successfully', { product });
     } catch (error) {
       console.error('Product creation error:', error);
-      sendResponse(res, 500, false, 'Failed to create product');
+
+      // Handle specific Prisma errors
+      if (error.code === 'P2002') {
+        return sendResponse(res, 400, false, 'Product with this name already exists');
+      }
+      if (error.code === 'P2003') {
+        return sendResponse(res, 400, false, 'Invalid category ID');
+      }
+
+      sendResponse(res, 500, false, `Failed to create product: ${error.message}`);
     }
   });
 });
@@ -271,15 +289,15 @@ const updateProduct = asyncHandler(async (req, res) => {
         name,
         description,
         price,
+        salePrice,
         stock,
         categoryId,
         featured,
         status,
         sizes,
         colors,
-        brand,
-        material,
-        tags,
+        metaTitle,
+        metaDescription,
         existingImages
       } = req.body;
 
@@ -332,9 +350,9 @@ const updateProduct = asyncHandler(async (req, res) => {
         if (status !== undefined) updateData.status = status;
         if (sizes !== undefined) updateData.sizes = sizes ? JSON.stringify(sizes) : null;
         if (colors !== undefined) updateData.colors = colors ? JSON.stringify(colors) : null;
-        if (brand !== undefined) updateData.brand = brand;
-        if (material !== undefined) updateData.material = material;
-        if (tags !== undefined) updateData.tags = tags ? JSON.stringify(tags) : null;
+        if (salePrice !== undefined) updateData.salePrice = salePrice ? parseFloat(salePrice) : null;
+        if (metaTitle !== undefined) updateData.metaTitle = metaTitle;
+        if (metaDescription !== undefined) updateData.metaDescription = metaDescription;
 
         // Update product
         const updatedProduct = await tx.product.update({
@@ -344,17 +362,13 @@ const updateProduct = asyncHandler(async (req, res) => {
 
         // Handle image updates
         if (req.files && req.files.length > 0) {
-          // Delete old images if not in existingImages list
+          // When new images are uploaded, completely replace all existing images
           const currentImages = await tx.productImage.findMany({
             where: { productId: id }
           });
 
-          const existingImageUrls = existingImages ? (Array.isArray(existingImages) ? existingImages : [existingImages]) : [];
-
-          // Delete images not in the existing list
-          const imagesToDelete = currentImages.filter(img => !existingImageUrls.includes(img.url));
-
-          for (const img of imagesToDelete) {
+          // Delete all existing images
+          for (const img of currentImages) {
             // Delete file from filesystem
             const filename = path.basename(img.url);
             const filePath = path.join(productsDir, filename);
@@ -372,8 +386,9 @@ const updateProduct = asyncHandler(async (req, res) => {
           const newImageData = req.files.map((file, index) => ({
             productId: id,
             url: `/uploads/products/${file.filename}`,
-            altText: `${updatedProduct.name} image ${index + 1}`,
-            sortOrder: existingImageUrls.length + index
+            altText: `${name || 'Product'} image ${index + 1}`,
+            isPrimary: index === 0, // First image is primary
+            sortOrder: index
           }));
 
           await tx.productImage.createMany({

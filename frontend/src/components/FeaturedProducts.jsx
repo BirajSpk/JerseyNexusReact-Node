@@ -4,6 +4,7 @@ import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
 import { ArrowRight, ShoppingBag, Loader } from './ui/ProfessionalIcon';
 import ProductCard from './ProductCard';
 import { productAPI } from '../utils/api';
+import { getImageUrl } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 const FeaturedProducts = () => {
@@ -24,22 +25,52 @@ const FeaturedProducts = () => {
           const products = response.data.data.products || [];
 
           // Process products to ensure proper image handling
-          const processedProducts = products.map(product => ({
-            ...product,
-            images: product.images ? (
-              typeof product.images === 'string'
-                ? [{ url: product.images }]
-                : Array.isArray(product.images)
-                  ? product.images
-                  : [{ url: product.images.url || product.images }]
-            ) : [{ url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSIyMDAiIHk9IjIxMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Qcm9kdWN0PC90ZXh0Pjwvc3ZnPg==' }],
-            price: product.salePrice || product.price,
-            originalPrice: product.price,
-            rating: product.rating || 4.5,
-            reviewCount: product.reviewCount || 0,
-            stock: product.stock || 0,
-            featured: true
-          }));
+          const processedProducts = products.map(product => {
+            // Handle productImages from the new API structure
+            let processedImages = [];
+
+            if (product.productImages && Array.isArray(product.productImages)) {
+              // New format: productImages array from database
+              processedImages = product.productImages
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .map(img => ({
+                  url: getImageUrl(img.url),
+                  altText: img.altText || product.name,
+                  isPrimary: img.isPrimary,
+                  sortOrder: img.sortOrder
+                }));
+            } else if (product.images) {
+              // Legacy format: images field
+              if (typeof product.images === 'string') {
+                processedImages = [{ url: product.images, altText: product.name }];
+              } else if (Array.isArray(product.images)) {
+                processedImages = product.images.map(img => ({
+                  url: typeof img === 'string' ? img : img.url,
+                  altText: typeof img === 'string' ? product.name : (img.altText || product.name)
+                }));
+              }
+            }
+
+            // Fallback if no images
+            if (processedImages.length === 0) {
+              processedImages = [{
+                url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgdmlld0JveD0iMCAwIDQwMCA0MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI0MDAiIGZpbGw9IiNmM2Y0ZjYiLz48dGV4dCB4PSIyMDAiIHk9IjIxMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Qcm9kdWN0PC90ZXh0Pjwvc3ZnPg==',
+                altText: 'Product Image'
+              }];
+            }
+
+            return {
+              ...product,
+              images: processedImages,
+              productImages: processedImages, // Ensure both formats are available
+              price: product.salePrice || product.price,
+              originalPrice: product.price,
+              rating: product.rating || 4.5,
+              reviewCount: product.reviewCount || 0,
+              stock: product.stock || 0,
+              featured: true
+            };
+          });
             // Only 8 products at a time 
           setFeaturedProducts(processedProducts.slice(0, 8)); 
         } else {

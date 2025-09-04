@@ -113,9 +113,10 @@ const Profile = () => {
   // Handle payment retry for pending Khalti orders
   const handleRetryPayment = async (order) => {
     try {
-      const response = await paymentAPI.initiateKhalti({
+      // Use the new Khalti KPG-2 API
+      const response = await paymentAPI.initiateKhaltiV2({
         orderId: order.id,
-        amount: order.totalAmount * 100,
+        amount: order.totalAmount,
         productName: `Order #${order.id.slice(-8)}`
       });
 

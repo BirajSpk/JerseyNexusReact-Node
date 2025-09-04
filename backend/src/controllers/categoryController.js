@@ -49,10 +49,43 @@ const updateCategory = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const deleteCategory = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+
+  // Check if category has products
+  const productsCount = await prisma.product.count({
+    where: { categoryId: id }
+  });
+
+  if (productsCount > 0) {
+    // Create or get "Uncategorized" category
+    let uncategorizedCategory = await prisma.category.findFirst({
+      where: {
+        slug: 'uncategorized',
+        type: 'PRODUCT'
+      }
+    });
+
+    if (!uncategorizedCategory) {
+      uncategorizedCategory = await prisma.category.create({
+        data: {
+          name: 'Uncategorized',
+          slug: 'uncategorized',
+          type: 'PRODUCT',
+          description: 'Products without a specific category'
+        }
+      });
+    }
+
+    // Move all products to uncategorized category
+    await prisma.product.updateMany({
+      where: { categoryId: id },
+      data: { categoryId: uncategorizedCategory.id }
+    });
+  }
+
+  // Now delete the category
   await prisma.category.delete({ where: { id } });
-  
-  sendResponse(res, 200, true, 'Category deleted successfully');
+
+  sendResponse(res, 200, true, `Category deleted successfully. ${productsCount} products moved to Uncategorized.`);
 });
 
 module.exports = {

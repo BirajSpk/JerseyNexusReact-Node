@@ -137,7 +137,7 @@ const Cart = () => {
                         src={item.image || 'https://placehold.co/120x120/e5e7eb/6b7280?text=Product'}
                         alt={item.name}
                         className="w-20 h-20 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => navigate(`/products/${item.slug}`)}
+                        onClick={() => navigate(`/products/${item.slug || item.id}`)}
                         onError={(e) => {
                           e.target.src = 'https://placehold.co/120x120/e5e7eb/6b7280?text=Product';
                         }}
@@ -148,7 +148,7 @@ const Cart = () => {
                     <div className="flex-1 min-w-0">
                       <h3
                         className="font-semibold text-dark mb-1 line-clamp-2 cursor-pointer hover:text-primary transition-colors"
-                        onClick={() => navigate(`/products/${item.slug}`)}
+                        onClick={() => navigate(`/products/${item.slug || item.id}`)}
                       >
                         {item.name}
                       </h3>

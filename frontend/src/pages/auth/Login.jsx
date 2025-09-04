@@ -56,8 +56,22 @@ const Login = () => {
       navigate(from, { replace: true });
       
     } catch (error) {
-      const message = error.response?.data?.error || 'Login failed. Please try again.';
+      let message = 'Login failed. Please try again.';
+
+      if (error.response?.status === 401) {
+        message = 'Invalid email or password. Please check your credentials.';
+      } else if (error.response?.status === 404) {
+        message = 'Account not found. Please check your email address.';
+      } else if (error.response?.status === 403) {
+        message = 'Account is disabled. Please contact support.';
+      } else if (error.response?.data?.error) {
+        message = error.response.data.error;
+      } else if (error.message) {
+        message = error.message;
+      }
+
       dispatch(setError(message));
+      toast.error(message);
     } finally {
       dispatch(setLoading(false));
     }
