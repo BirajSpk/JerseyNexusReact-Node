@@ -18,8 +18,8 @@ router.get('/slug/:slug', getBlog);
 router.get('/:id', getBlog);
 
 // Admin routes
-router.post('/', protect, authorize('ADMIN'), uploadBlogImage, createBlog);
-router.put('/:id', protect, authorize('ADMIN'), uploadBlogImage, updateBlog);
+router.post('/', protect, authorize('ADMIN'), uploadBlogImage, validateBlog, createBlog);
+router.put('/:id', protect, authorize('ADMIN'), uploadBlogImage, validateBlog, updateBlog);
 router.delete('/:id', protect, authorize('ADMIN'), deleteBlog);
 
 module.exports = router;

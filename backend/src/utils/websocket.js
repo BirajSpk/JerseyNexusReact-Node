@@ -11,9 +11,14 @@ class WebSocketService {
   }
 
   initialize(server) {
+    // Use the same CORS origins as HTTP server
+    const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || process.env.CORS || 'http://localhost:3000,http://localhost:3001')
+      .split(',')
+      .map(o => o.trim());
+
     this.io = new Server(server, {
       cors: {
-        origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
+        origin: ALLOWED_ORIGINS,
         methods: ['GET', 'POST'],
         credentials: true
       },

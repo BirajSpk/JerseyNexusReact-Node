@@ -120,8 +120,8 @@ const validateBlog = [
     .withMessage('Blog title must be between 5 and 200 characters'),
   body('content')
     .trim()
-    .isLength({ min: 50 })
-    .withMessage('Blog content must be at least 50 characters'),
+    .isLength({ min: 10 })
+    .withMessage('Blog content must be at least 10 characters'),
   body('categoryId')
     .notEmpty()
     .withMessage('Category is required'),

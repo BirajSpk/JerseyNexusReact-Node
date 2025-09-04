@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const http = require('http');
+const path = require('path');
 const WebSocketService = require('./utils/websocket');
 const DatabaseChecker = require('./utils/dbCheck');
 require('dotenv').config();
@@ -35,9 +36,13 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
-// CORS configuration
+// CORS configuration - unified for both HTTP and WebSocket
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || process.env.CORS || 'http://localhost:3000,http://localhost:3001')
+  .split(',')
+  .map(o => o.trim());
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
+  origin: ALLOWED_ORIGINS,
   credentials: true,
   optionsSuccessStatus: 200
 }));
@@ -71,8 +76,8 @@ if (process.env.NODE_ENV !== 'production') {
 
 prisma.$connect();
 
-// Static files
-app.use('/uploads', express.static('uploads'));
+// Static files - use absolute path to ensure uploads are served correctly
+app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
 // Health check
 app.get('/health', (req, res) => {

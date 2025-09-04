@@ -222,20 +222,19 @@ const ImageUpload = ({
                   </p>
                 )}
                 {withAlt && (
-                <div className="mt-2">
-                  <label className="block text-xs text-gray-600 mb-1">Alt text</label>
-                  <input
-                    type="text"
-                    value={image.altText || ''}
-                    onChange={(e) => {
-                      const updated = images.map(img => img.id === image.id ? { ...img, altText: e.target.value } : img);
-                      onImagesChange(updated);
-                    }}
-                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                    placeholder="Describe the image"
-                  />
-                </div>
-              )}
+                  <div className="mt-2">
+                    <label className="block text-xs text-gray-600 mb-1">Alt text</label>
+                    <input
+                      type="text"
+                      value={image.altText || ''}
+                      onChange={(e) => {
+                        const updated = images.map(img => img.id === image.id ? { ...img, altText: e.target.value } : img);
+                        onImagesChange(updated);
+                      }}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                      placeholder="Describe the image"
+                    />
+                  </div>
                 )}
               </div>
             </motion.div>

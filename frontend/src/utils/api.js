@@ -6,18 +6,25 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5003/api'
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  // Don't set default Content-Type - let it be determined by request data
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and handle content types
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // If body is FormData, let the browser set the correct headers
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    } else {
+      // For plain objects we can set JSON explicitly
+      config.headers['Content-Type'] = 'application/json';
+    }
+
     return config;
   },
   (error) => {
