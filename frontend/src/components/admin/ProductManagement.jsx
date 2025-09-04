@@ -561,8 +561,8 @@ const ProductManagement = () => {
                   <ImageUpload
                     images={productImages}
                     onImagesChange={setProductImages}
-                    maxImages={2}
-                    label="Product Images (Front & Back View)"
+                    maxImages={1}
+                    label="Product Image"
                     maxSizeInMB={5}
                     withAlt={true}
                   />
