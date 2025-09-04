@@ -165,7 +165,10 @@ const createProduct = asyncHandler(async (req, res) => {
         sizes,
         colors,
         metaTitle,
-        metaDescription
+        metaDescription,
+        keywords,
+        slug: providedSlug,
+        metaTags
       } = req.body;
 
       // Validate required fields
@@ -182,13 +185,15 @@ const createProduct = asyncHandler(async (req, res) => {
         return sendResponse(res, 400, false, 'Category not found');
       }
 
-      let slug = generateSlug(name);
+      // Use provided slug or generate from name
+      let slug = providedSlug && providedSlug.trim().length > 0 ? generateSlug(providedSlug) : generateSlug(name);
 
       // Check if slug already exists and make it unique
       let slugExists = await prisma.product.findUnique({ where: { slug } });
       let counter = 1;
       while (slugExists) {
-        slug = `${generateSlug(name)}-${counter}`;
+        const baseSlug = providedSlug && providedSlug.trim().length > 0 ? generateSlug(providedSlug) : generateSlug(name);
+        slug = `${baseSlug}-${counter}`;
         slugExists = await prisma.product.findUnique({ where: { slug } });
         counter++;
       }
@@ -221,7 +226,9 @@ const createProduct = asyncHandler(async (req, res) => {
             sizes: sizes ? JSON.stringify(sizes) : null,
             colors: colors ? JSON.stringify(colors) : null,
             metaTitle: metaTitle || name,
-            metaDescription: metaDescription || description
+            metaDescription: metaDescription || description,
+            keywords: keywords || null,
+            metaTags: metaTags || null
           }
         });
 
@@ -298,6 +305,9 @@ const updateProduct = asyncHandler(async (req, res) => {
         colors,
         metaTitle,
         metaDescription,
+        keywords,
+        slug: providedSlug,
+        metaTags,
         existingImages
       } = req.body;
 
@@ -328,7 +338,32 @@ const updateProduct = asyncHandler(async (req, res) => {
 
         if (name !== undefined) {
           updateData.name = name;
-          updateData.slug = generateSlug(name);
+        }
+
+        // Handle slug update with uniqueness check
+        if (providedSlug !== undefined || name !== undefined) {
+          let newSlug = providedSlug && providedSlug.trim().length > 0 ? generateSlug(providedSlug) : generateSlug(name || existingProduct.name);
+
+          // Check if slug already exists (excluding current product)
+          let slugExists = await tx.product.findFirst({
+            where: {
+              slug: newSlug,
+              id: { not: id }
+            }
+          });
+          let counter = 1;
+          while (slugExists) {
+            const baseSlug = providedSlug && providedSlug.trim().length > 0 ? generateSlug(providedSlug) : generateSlug(name || existingProduct.name);
+            newSlug = `${baseSlug}-${counter}`;
+            slugExists = await tx.product.findFirst({
+              where: {
+                slug: newSlug,
+                id: { not: id }
+              }
+            });
+            counter++;
+          }
+          updateData.slug = newSlug;
         }
         if (description !== undefined) updateData.description = description;
         if (price !== undefined) {
@@ -353,6 +388,8 @@ const updateProduct = asyncHandler(async (req, res) => {
         if (salePrice !== undefined) updateData.salePrice = salePrice ? parseFloat(salePrice) : null;
         if (metaTitle !== undefined) updateData.metaTitle = metaTitle;
         if (metaDescription !== undefined) updateData.metaDescription = metaDescription;
+        if (keywords !== undefined) updateData.keywords = keywords;
+        if (metaTags !== undefined) updateData.metaTags = metaTags;
 
         // Update product
         const updatedProduct = await tx.product.update({

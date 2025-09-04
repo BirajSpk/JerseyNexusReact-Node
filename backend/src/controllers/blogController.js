@@ -52,7 +52,7 @@ const getBlog = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const createBlog = asyncHandler(async (req, res) => {
   try {
-    const { title, content, categoryId, published = false, status = 'DRAFT', imageUrl, existingFeaturedImage, metaTitle, metaDescription, slug } = req.body;
+    const { title, content, categoryId, published = false, status = 'DRAFT', imageUrl, existingFeaturedImage, metaTitle, metaDescription, slug, keywords, metaTags } = req.body;
     const authorId = req.user.id;
 
     // Validate required fields
@@ -105,6 +105,8 @@ const createBlog = asyncHandler(async (req, res) => {
         featuredImage: featuredImageUrl,
         metaTitle: metaTitle || title,
         metaDescription: metaDescription || content?.substring(0, 160),
+        keywords: keywords || null,
+        metaTags: metaTags || null,
         images: featuredImageUrl ? JSON.stringify([{ url: featuredImageUrl, altText: title, isPrimary: true }]) : null
       },
       include: { category: true, author: { select: { name: true } } }
@@ -143,6 +145,12 @@ const updateBlog = asyncHandler(async (req, res) => {
   }
   if (rest.metaDescription) {
     data.metaDescription = rest.metaDescription;
+  }
+  if (rest.keywords) {
+    data.keywords = rest.keywords;
+  }
+  if (rest.metaTags) {
+    data.metaTags = rest.metaTags;
   }
 
   // Handle featured image update

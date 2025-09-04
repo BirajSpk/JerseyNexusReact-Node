@@ -20,6 +20,9 @@ const ProductManagement = () => {
     categoryId: '',
     metaTitle: '',
     metaDescription: '',
+    keywords: '',
+    slug: '',
+    metaTags: '',
     featured: false,
     status: 'ACTIVE'
   });
@@ -29,6 +32,26 @@ const ProductManagement = () => {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  // Auto-generate slug from product name or keywords
+  useEffect(() => {
+    const toSlug = (str) => {
+      if (!str) return '';
+      return str
+        .toLowerCase()
+        .replace(/,/g, ' ')
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\s/g, '-');
+    };
+
+    // Only auto-generate slug if it's a new product or slug is empty
+    if (!editingProduct || !formData.slug) {
+      const newSlug = toSlug(formData.name || formData.keywords);
+      setFormData(prev => ({ ...prev, slug: newSlug }));
+    }
+  }, [formData.name, formData.keywords, editingProduct]);
 
   const fetchProducts = async () => {
     try {
@@ -121,6 +144,9 @@ const ProductManagement = () => {
       categoryId: product.categoryId || '',
       metaTitle: product.metaTitle || '',
       metaDescription: product.metaDescription || '',
+      keywords: product.keywords || '',
+      slug: product.slug || '',
+      metaTags: product.metaTags || '',
       featured: product.featured || false,
       status: product.status || 'ACTIVE'
     });
@@ -193,6 +219,9 @@ const ProductManagement = () => {
       categoryId: '',
       metaTitle: '',
       metaDescription: '',
+      keywords: '',
+      slug: '',
+      metaTags: '',
       featured: false,
       status: 'ACTIVE'
     });
@@ -482,6 +511,48 @@ const ProductManagement = () => {
                     onChange={(e) => setFormData({...formData, metaDescription: e.target.value})}
                     rows={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="SEO description for search engines"
+                  />
+                </div>
+
+                {/* SEO Fields */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Keywords</label>
+                  <input
+                    type="text"
+                    value={formData.keywords}
+                    onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="football jersey, sports wear, team uniform, ..."
+                  />
+                  {formData.keywords && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Primary: <span className="font-semibold">{formData.keywords.split(',')[0].trim()}</span>,
+                      Secondary: <span className="font-semibold">{formData.keywords.split(',').slice(1).join(', ').trim()}</span>
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">URL Slug</label>
+                  <input
+                    type="text"
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                    placeholder="auto-generated-product-slug"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">This will be the URL for your product. It's generated from the product name but can be edited.</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Meta Tags</label>
+                  <textarea
+                    value={formData.metaTags}
+                    onChange={(e) => setFormData({ ...formData, metaTags: e.target.value })}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter meta tags, separated by commas"
                   />
                 </div>
 

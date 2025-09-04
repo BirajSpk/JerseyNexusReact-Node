@@ -464,7 +464,7 @@ useEffect(() => {
                     value={formData.keywords}
                     onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Primary keyword, secondary keyword, ..."
+                    placeholder="sports blog, football news, team updates, ..."
                   />
                   {formData.keywords && (
                     <p className="text-xs text-gray-500 mt-1">
@@ -483,7 +483,7 @@ useEffect(() => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
                     placeholder="auto-generated-slug"
                   />
-                   <p className="text-xs text-gray-500 mt-1">This will be the URL for your blog post. It's generated from keywords but can be edited.</p>
+                   <p className="text-xs text-gray-500 mt-1">This will be the URL for your blog post. It's generated from the title but can be edited.</p>
                 </div>
 
                 <div>
