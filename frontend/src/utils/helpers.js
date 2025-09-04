@@ -58,10 +58,16 @@ export const validatePhone = (phone) => {
   return phoneRegex.test(phone.replace(/\s/g, ''));
 };
 
-export const getImageUrl = (imagePath) => {
+export const getImageUrl = (imagePath, opts = { auto: true }) => {
   if (!imagePath) return 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="#f3f4f6"/><text x="200" y="210" text-anchor="middle" fill="#9ca3af" font-family="Arial" font-size="16">Product</text></svg>');
   // Absolute URL
-  if (imagePath.startsWith('http')) return imagePath;
+  if (imagePath.startsWith('http')) {
+    // If Cloudinary URL, add delivery transformations
+    if (imagePath.includes('res.cloudinary.com') && opts.auto !== false) {
+      return imagePath.replace('/upload/', '/upload/f_auto,q_auto/');
+    }
+    return imagePath;
+  }
   // Data URL should be returned as-is
   if (imagePath.startsWith('data:')) return imagePath;
   // Derive API origin even if VITE_API_URL includes /api suffix

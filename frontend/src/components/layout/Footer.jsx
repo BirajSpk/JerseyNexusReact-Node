@@ -48,7 +48,7 @@ const Footer = () => {
               className="mb-6"
             >
               <Link to="/" className="mb-4 inline-block">
-                <Logo size="lg" animated={true} showText={true} variant="white" />
+                <Logo size="lg" animated={false} showText={true} variant="white" />
               </Link>
               <p className="text-gray-300 mb-4">
                 Nepal's premier destination for authentic sportswear and jerseys. 

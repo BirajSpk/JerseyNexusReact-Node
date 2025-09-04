@@ -4,6 +4,7 @@ import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
 import { ShoppingBag, Truck, Shield, Star } from '../components/ui/ProfessionalIcon';
 import FeaturedProducts from '../components/FeaturedProducts';
 import FeaturedBlogs from '../components/FeaturedBlogs';
+import HeroProductShowcase from '../components/HeroProductShowcase';
 import Logo from '../components/ui/Logo';
 
 const Home = () => {
@@ -33,32 +34,75 @@ const Home = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary via-primary/90 to-secondary text-white py-20">
+      <section className="bg-gradient-to-br from-primary via-primary/90 to-secondary text-white py-12 min-h-[80vh] flex items-center">
         <div className="container">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
+              className="space-y-6"
             >
-              <h1 className="text-4xl md:text-6xl font-bold mb-6">
-                Your Premier
-                <span className="text-accent block">Sports Destination</span>
-              </h1>
-              <p className="text-xl mb-8 text-white/90">
-                Discover authentic jerseys from top teams around the world. 
-                Quality sportswear delivered fast across Nepal.
+              <div className="space-y-2">
+                <p className="text-accent font-semibold text-lg">Nepal's #1 Sports Store</p>
+                <h1 className="text-3xl md:text-5xl font-bold leading-tight">
+                  Your Premier
+                  <span className="text-accent block">Sports Destination</span>
+                </h1>
+              </div>
+
+              <p className="text-lg text-white/90 leading-relaxed">
+                Discover authentic jerseys from top teams around the world.
+                Quality sportswear delivered fast across Nepal with 100% authenticity guarantee.
               </p>
-              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+
+              {/* Key Features */}
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-accent rounded-full"></div>
+                  <span className="text-sm">100% Authentic</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-accent rounded-full"></div>
+                  <span className="text-sm">Fast Delivery</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-accent rounded-full"></div>
+                  <span className="text-sm">Secure Payment</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-accent rounded-full"></div>
+                  <span className="text-sm">24/7 Support</span>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="flex space-x-6 py-2">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-accent">500+</div>
+                  <div className="text-sm text-white/80">Products</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-accent">10K+</div>
+                  <div className="text-sm text-white/80">Happy Customers</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-accent">50+</div>
+                  <div className="text-sm text-white/80">Teams</div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 pt-2">
                 <Link
                   to="/products"
-                  className="btn bg-white text-primary hover:bg-white/90 px-8 py-3 text-lg font-semibold"
+                  className="btn bg-white text-primary hover:bg-white/90 px-6 py-3 text-base font-semibold flex items-center justify-center space-x-2"
                 >
-                  Shop Now
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>Shop Now</span>
                 </Link>
                 <Link
                   to="/about"
-                  className="btn border-2 border-white text-white hover:bg-white hover:text-primary px-8 py-3 text-lg font-semibold"
+                  className="btn border-2 border-white text-white hover:bg-white hover:text-primary px-6 py-3 text-base font-semibold"
                 >
                   Learn More
                 </Link>
@@ -69,20 +113,10 @@ const Home = () => {
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative"
+              className="relative flex justify-center lg:justify-end"
             >
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8">
-                <motion.div
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                  className="text-center"
-                >
-                  <div className="w-32 h-32 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center backdrop-blur-sm">
-                    <Logo size="2xl" animated={true} showText={false} variant="hero" />
-                  </div>
-                  <h3 className="text-2xl font-bold mb-2">JerseyNexus</h3>
-                  <p className="text-white/80">Premium Sports Collection</p>
-                </motion.div>
+              <div className="w-full max-w-sm">
+                <HeroProductShowcase />
               </div>
             </motion.div>
           </div>

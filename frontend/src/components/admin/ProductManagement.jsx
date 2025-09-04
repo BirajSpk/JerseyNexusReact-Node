@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import ImageUpload from './ImageUpload';
+import ProductImageManager from './ProductImageManager';
 import toast from 'react-hot-toast';
 import { productAPI, categoryAPI } from '../../utils/api';
+import { Plus } from 'lucide-react';
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
@@ -272,9 +274,10 @@ const ProductManagement = () => {
             resetForm();
             setShowModal(true);
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
         >
-          ➕ Add Product
+          <Plus className="w-4 h-4" />
+          <span>Add Product</span>
         </button>
       </div>
 
@@ -556,15 +559,27 @@ const ProductManagement = () => {
                   />
                 </div>
 
-                {/* Product Images Upload */}
+                {/* Product Images Management */}
                 <div>
-                  <ImageUpload
-                    images={productImages}
-                    onImagesChange={setProductImages}
-                    maxImages={1}
-                    label="Product Image"
-                    maxSizeInMB={5}
-                    withAlt={true}
+                  <ProductImageManager
+                    productId={editingProduct?.id}
+                    images={editingProduct?.productImages || []}
+                    onImagesUpdate={(updatedImages) => {
+                      if (editingProduct) {
+                        setEditingProduct({
+                          ...editingProduct,
+                          productImages: updatedImages
+                        });
+                        // Also update the products list
+                        setProducts(products.map(p =>
+                          p.id === editingProduct.id
+                            ? { ...p, productImages: updatedImages }
+                            : p
+                        ));
+                      }
+                    }}
+                    maxImages={10}
+                    isEditing={!!editingProduct?.id}
                   />
                 </div>
 

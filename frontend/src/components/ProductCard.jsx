@@ -184,19 +184,19 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
               e.stopPropagation();
               handleViewProduct();
             }}
-            className="bg-white p-3 rounded-full shadow-lg"
+            className="bg-white p-2.5 rounded-full shadow-lg hover:shadow-xl transition-shadow"
             title="Quick View"
           >
-            <Eye className="h-5 w-5" />
+            <Eye className="h-4 w-4" />
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleToggleWishlist}
-            className={`bg-white p-3 rounded-full shadow-lg ${isInWishlist ? 'text-red-500' : 'text-dark'}`}
+            className={`bg-white p-2.5 rounded-full shadow-lg hover:shadow-xl transition-shadow ${isInWishlist ? 'text-red-500' : 'text-dark'}`}
             title={isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
           >
-            <Heart className={`h-5 w-5 ${isInWishlist ? 'fill-current' : ''}`} />
+            <Heart className={`h-4 w-4 ${isInWishlist ? 'fill-current' : ''}`} />
           </motion.button>
         </div>
       </div>
@@ -244,25 +244,25 @@ const ProductCard = ({ product, index = 0, viewMode = 'grid' }) => {
         </div>
 
         {/* Actions */}
-        <div className="flex space-x-2 mt-2">
+        <div className="flex space-x-1.5 mt-2">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleAddToCart}
-            className="flex-1 py-2 bg-gray-50 text-gray-700 rounded-xl border border-gray-200 flex items-center justify-center space-x-2 hover:bg-gray-100"
+            className="flex-1 py-2 px-2 bg-gray-50 text-gray-700 rounded-lg border border-gray-200 flex items-center justify-center space-x-1 hover:bg-gray-100 transition-colors text-xs font-medium min-w-0"
           >
-            <ShoppingCart className="h-4 w-4" />
-            <span>Add to Cart</span>
+            <ShoppingCart className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">Add to Cart</span>
           </motion.button>
 
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleBuyNow}
-            className="flex-1 py-2 bg-gradient-to-r from-primary to-primary/90 text-white rounded-xl flex items-center justify-center space-x-2 shadow-lg"
+            className="flex-1 py-2 px-2 bg-gradient-to-r from-primary to-primary/90 text-white rounded-lg flex items-center justify-center space-x-1 shadow-sm hover:shadow-md transition-all text-xs font-medium min-w-0"
           >
-            <Zap className="h-4 w-4" />
-            <span>Buy Now</span>
+            <Zap className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">Buy Now</span>
           </motion.button>
         </div>
       </div>

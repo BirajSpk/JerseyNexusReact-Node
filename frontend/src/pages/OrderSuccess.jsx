@@ -1,35 +1,92 @@
-import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from '../utils/motion.jsx'; // Temporary motion wrapper
 import { CheckCircle, Package, Truck, Home, ArrowRight } from '../components/ui/SimpleIcon';
+import { orderAPI } from '../utils/api';
+import toast from 'react-hot-toast';
 
 const OrderSuccess = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  
-  const orderData = location.state?.orderData;
-  const order = location.state?.order;
+  const [searchParams] = useSearchParams();
+  const [orderData, setOrderData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Get data from location state (for normal checkout flow)
+  const stateOrderData = location.state?.orderData;
+  const stateOrder = location.state?.order;
   const paymentMethod = location.state?.paymentMethod;
 
-  // Handle both old and new data structures
-  const actualOrderData = orderData || order;
+  // Get data from query params (for payment callback redirects)
+  const queryOrderId = searchParams.get('orderId');
+  const transactionId = searchParams.get('transactionId');
+
+  useEffect(() => {
+    const loadOrderData = async () => {
+      try {
+        // If we have order data from state, use it
+        if (stateOrderData || stateOrder) {
+          setOrderData(stateOrderData || stateOrder);
+          setLoading(false);
+          return;
+        }
+
+        // If we have orderId from query params, fetch the order
+        if (queryOrderId) {
+          const response = await orderAPI.getOrderById(queryOrderId);
+          if (response.data.success) {
+            setOrderData(response.data.data);
+            toast.success('Order confirmed successfully!');
+          } else {
+            throw new Error('Failed to load order details');
+          }
+        } else {
+          // No order data available, redirect to home
+          navigate('/');
+          return;
+        }
+      } catch (error) {
+        console.error('Error loading order:', error);
+        toast.error('Failed to load order details');
+        navigate('/');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrderData();
+  }, [stateOrderData, stateOrder, queryOrderId, navigate]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral py-12 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted">Loading order details...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Redirect if no order data
-  if (!actualOrderData) {
-    navigate('/');
+  if (!orderData) {
     return null;
   }
 
   // Extract data based on structure
-  const items = actualOrderData.items || [];
-  const total = actualOrderData.totalAmount || actualOrderData.total || 0;
-  const shipping = actualOrderData.shippingAddress ?
-    (typeof actualOrderData.shippingAddress === 'string' ?
-      JSON.parse(actualOrderData.shippingAddress) :
-      actualOrderData.shippingAddress) :
-    actualOrderData.shipping;
-  const finalPaymentMethod = paymentMethod || actualOrderData.paymentMethod || 'cod';
-  const orderId = actualOrderData.id ? `#${actualOrderData.id.slice(-8)}` : `JN${Date.now().toString().slice(-6)}`;
+  const items = orderData.items || [];
+  const total = orderData.totalAmount || orderData.total || 0;
+  const shipping = orderData.shippingAddress ?
+    (typeof orderData.shippingAddress === 'string' ?
+      JSON.parse(orderData.shippingAddress) :
+      orderData.shippingAddress) :
+    orderData.shipping;
+  const finalPaymentMethod = paymentMethod || orderData.paymentMethod || 'khalti';
+  const orderId = orderData.id ? `#${orderData.id.slice(-8)}` : `JN${Date.now().toString().slice(-6)}`;
+
+  // Show transaction ID if available (from Khalti callback)
+  const displayTransactionId = transactionId || orderData.transactionId;
   
   return (
     <div className="min-h-screen bg-neutral py-12">
@@ -52,6 +109,9 @@ const OrderSuccess = () => {
           <h1 className="text-4xl font-bold text-dark mb-4">Order Confirmed!</h1>
           <p className="text-xl text-muted mb-2">Thank you for your purchase</p>
           <p className="text-muted">Order ID: <span className="font-semibold text-dark">{orderId}</span></p>
+          {displayTransactionId && (
+            <p className="text-muted">Transaction ID: <span className="font-semibold text-dark">{displayTransactionId}</span></p>
+          )}
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

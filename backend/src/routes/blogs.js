@@ -6,20 +6,20 @@ const {
   updateBlog,
   deleteBlog,
 } = require('../controllers/blogController');
-const { protect, authorize } = require('../middlewares/auth');
+const { protect, authorize, optionalAuth } = require('../middlewares/auth');
 const { validateBlog } = require('../utils/validation');
 const { uploadBlogImage } = require('../middlewares/upload');
 
 const router = express.Router();
 
-// Public routes
-router.get('/', getBlogs);
-router.get('/slug/:slug', getBlog);
-router.get('/:id', getBlog);
+// Public routes with optional authentication for admin access
+router.get('/', optionalAuth, getBlogs);
+router.get('/slug/:slug', optionalAuth, getBlog);
+router.get('/:id', optionalAuth, getBlog);
 
 // Admin routes
-router.post('/', protect, authorize('ADMIN'), uploadBlogImage, validateBlog, createBlog);
-router.put('/:id', protect, authorize('ADMIN'), uploadBlogImage, validateBlog, updateBlog);
+router.post('/', protect, authorize('ADMIN'), createBlog);
+router.put('/:id', protect, authorize('ADMIN'), updateBlog);
 router.delete('/:id', protect, authorize('ADMIN'), deleteBlog);
 
 module.exports = router;

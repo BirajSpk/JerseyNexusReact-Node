@@ -3,30 +3,11 @@ const { prisma, executeWithRetry } = require('../config/database');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const productsDir = path.join(__dirname, '..', 'uploads', 'products');
+const { uploadBufferToCloudinary, deleteFromCloudinaryByUrl } = require('../utils/cloudinary');
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, '../../uploads');
-// const productsDir = path.join(uploadsDir, 'products');
-
-if (!fs.existsSync(productsDir)) {
-  fs.mkdirSync(productsDir, { recursive: true });
-}
-
-// Configure multer for product images
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, productsDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const extension = path.extname(file.originalname);
-    cb(null, 'product-' + uniqueSuffix + extension);
-  }
-});
-
+// Configure multer for product images (memory storage for Cloudinary)
 const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
@@ -167,14 +148,30 @@ const createProduct = asyncHandler(async (req, res) => {
         colors,
         metaTitle,
         metaDescription,
-        keywords,
-        slug: providedSlug,
-        metaTags
+        slug: providedSlug
       } = req.body;
 
       // Validate required fields
-      if (!name || !price || !stock || !categoryId) {
-        return sendResponse(res, 400, false, 'Missing required fields: name, price, stock, categoryId');
+      const validationErrors = [];
+
+      if (!name || name.trim().length < 2 || name.trim().length > 200) {
+        validationErrors.push({ message: 'Product name must be between 2 and 200 characters', value: name });
+      }
+
+      if (!price || isNaN(parseFloat(price)) || parseFloat(price) < 0) {
+        validationErrors.push({ message: 'Price must be a positive number' });
+      }
+
+      if (!stock || isNaN(parseInt(stock)) || parseInt(stock) < 0) {
+        validationErrors.push({ message: 'Stock must be a non-negative integer' });
+      }
+
+      if (!categoryId) {
+        validationErrors.push({ message: 'Category is required' });
+      }
+
+      if (validationErrors.length > 0) {
+        return sendResponse(res, 400, false, 'Validation failed', { details: validationErrors });
       }
 
       // Validate category exists
@@ -227,24 +224,30 @@ const createProduct = asyncHandler(async (req, res) => {
             sizes: sizes ? JSON.stringify(sizes) : null,
             colors: colors ? JSON.stringify(colors) : null,
             metaTitle: metaTitle || name,
-            metaDescription: metaDescription || description,
-            keywords: keywords || null,
-            metaTags: metaTags || null
+            metaDescription: metaDescription || description
           }
         });
 
-        // Handle uploaded images
+        // Handle uploaded images via Cloudinary
         if (req.files && req.files.length > 0) {
-          const imageData = req.files.map((file, index) => ({
-            productId: newProduct.id,
-            url: `/uploads/products/${file.filename}`,
-            altText: `${name} image ${index + 1}`,
-            sortOrder: index
-          }));
+          const uploads = [];
+          let sortIndex = 0;
+          for (const file of req.files) {
+            const result = await uploadBufferToCloudinary(file.buffer, {
+              folder: `${process.env.CLOUDINARY_BASE_FOLDER || 'jerseynexus'}/products/${newProduct.id}`,
+              resourceType: 'image',
+            });
+            uploads.push({
+              productId: newProduct.id,
+              url: result.secure_url,
+              altText: `${name} image ${sortIndex + 1}`,
+              isPrimary: sortIndex === 0,
+              sortOrder: sortIndex,
+            });
+            sortIndex++;
+          }
 
-          await tx.productImage.createMany({
-            data: imageData
-          });
+          await tx.productImage.createMany({ data: uploads });
         }
 
         return tx.product.findUnique({
@@ -306,8 +309,6 @@ const createProduct = asyncHandler(async (req, res) => {
         colors,
         metaTitle,
         metaDescription,
-        keywords,
-        metaTags,
         slug: providedSlug
       } = req.body;
 
@@ -356,16 +357,6 @@ const createProduct = asyncHandler(async (req, res) => {
           metaTitle,
           metaDescription,
           slug: newSlug,
-          keywords: keywords
-            ? Array.isArray(keywords)
-              ? keywords
-              : [keywords]
-            : undefined,
-          metaTags: metaTags
-            ? Array.isArray(metaTags)
-              ? metaTags
-              : [metaTags]
-            : undefined,
           ...(categoryId ? { category: { connect: { id: categoryId } } } : {})
         };
 
@@ -375,27 +366,40 @@ const createProduct = asyncHandler(async (req, res) => {
           data
         });
 
-        // Handle images
+        // Handle images with Cloudinary
         if (req.files && req.files.length > 0) {
           const currentImages = await tx.productImage.findMany({ where: { productId: id } });
 
-          // Delete old images
+          // Delete old images from Cloudinary and DB
           for (const img of currentImages) {
-            const filename = path.basename(img.url);
-            const filePath = path.join(productsDir, filename);
-            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-
+            // Attempt to delete from Cloudinary if URL is a Cloudinary URL
+            await deleteFromCloudinaryByUrl(img.url, 'image').catch(() => {});
+            // Also delete legacy local files
+            if (img.url && img.url.startsWith('/uploads/')) {
+              try {
+                const localPath = path.join(__dirname, '../../', img.url);
+                if (fs.existsSync(localPath)) fs.unlinkSync(localPath);
+              } catch (_) {}
+            }
             await tx.productImage.delete({ where: { id: img.id } });
           }
 
           // Add new images
-          const newImages = req.files.map((file, index) => ({
-            productId: id,
-            url: `/uploads/products/${file.filename}`,
-            altText: `${name || 'Product'} image ${index + 1}`,
-            isPrimary: index === 0,
-            sortOrder: index
-          }));
+          const newImages = [];
+          for (let index = 0; index < req.files.length; index++) {
+            const file = req.files[index];
+            const result = await uploadBufferToCloudinary(file.buffer, {
+              folder: `${process.env.CLOUDINARY_BASE_FOLDER || 'jerseynexus'}/products/${id}`,
+              resourceType: 'image',
+            });
+            newImages.push({
+              productId: id,
+              url: result.secure_url,
+              altText: `${name || 'Product'} image ${index + 1}`,
+              isPrimary: index === 0,
+              sortOrder: index,
+            });
+          }
 
           await tx.productImage.createMany({ data: newImages });
         }
@@ -418,14 +422,20 @@ const createProduct = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Delete product
+// @desc    Delete product (and its Cloudinary images)
 // @route   DELETE /api/products/:id
 // @access  Private/Admin
 const deleteProduct = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+
+  // Fetch images to delete from Cloudinary
+  const images = await prisma.productImage.findMany({ where: { productId: id } });
+  for (const img of images) {
+    await deleteFromCloudinaryByUrl(img.url, 'image').catch(() => {});
+  }
+
   await prisma.product.delete({ where: { id } });
-  
+
   sendResponse(res, 200, true, 'Product deleted successfully');
 });
 
@@ -547,6 +557,209 @@ const searchProducts = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Upload multiple images for a product
+// @route   POST /api/products/:id/images
+// @access  Private/Admin
+const uploadProductImages = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Check if product exists
+  const product = await prisma.product.findUnique({ where: { id } });
+  if (!product) {
+    return sendResponse(res, 404, false, 'Product not found');
+  }
+
+  upload.array('images', 10)(req, res, async (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return sendResponse(res, 400, false, 'File too large. Maximum size is 5MB per file.');
+      }
+      return sendResponse(res, 400, false, `Upload error: ${err.message}`);
+    } else if (err) {
+      return sendResponse(res, 400, false, err.message);
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return sendResponse(res, 400, false, 'No files uploaded');
+    }
+
+    try {
+      // Get current max sort order
+      const maxSortOrder = await prisma.productImage.findFirst({
+        where: { productId: id },
+        orderBy: { sortOrder: 'desc' },
+        select: { sortOrder: true }
+      });
+
+      let nextSortOrder = (maxSortOrder?.sortOrder || -1) + 1;
+
+      const uploads = [];
+      for (const file of req.files) {
+        const result = await uploadBufferToCloudinary(file.buffer, {
+          folder: `${process.env.CLOUDINARY_BASE_FOLDER || 'jerseynexus'}/products/${id}`,
+          resourceType: 'image',
+        });
+
+        uploads.push({
+          productId: id,
+          url: result.secure_url,
+          altText: req.body.altText || `${product.name} image ${nextSortOrder + 1}`,
+          isPrimary: false, // New images are not primary by default
+          sortOrder: nextSortOrder,
+        });
+        nextSortOrder++;
+      }
+
+      const createdImages = await prisma.productImage.createMany({ data: uploads });
+
+      // Get the updated product with all images
+      const updatedProduct = await prisma.product.findUnique({
+        where: { id },
+        include: {
+          productImages: { orderBy: { sortOrder: 'asc' } }
+        }
+      });
+
+      sendResponse(res, 201, true, 'Images uploaded successfully', {
+        product: updatedProduct,
+        uploadedCount: uploads.length
+      });
+    } catch (error) {
+      console.error('Product image upload error:', error);
+      sendResponse(res, 500, false, 'Failed to upload images');
+    }
+  });
+});
+
+// @desc    Delete a product image
+// @route   DELETE /api/products/:id/images/:imageId
+// @access  Private/Admin
+const deleteProductImage = asyncHandler(async (req, res) => {
+  const { id, imageId } = req.params;
+
+  // Check if product exists
+  const product = await prisma.product.findUnique({ where: { id } });
+  if (!product) {
+    return sendResponse(res, 404, false, 'Product not found');
+  }
+
+  // Check if image exists and belongs to this product
+  const image = await prisma.productImage.findFirst({
+    where: { id: imageId, productId: id }
+  });
+
+  if (!image) {
+    return sendResponse(res, 404, false, 'Image not found');
+  }
+
+  try {
+    // Delete from database first
+    await prisma.productImage.delete({ where: { id: imageId } });
+
+    // Delete from Cloudinary
+    await deleteFromCloudinaryByUrl(image.url, 'image').catch((error) => {
+      console.error('Failed to delete image from Cloudinary:', error);
+      // Continue execution even if Cloudinary deletion fails
+    });
+
+    sendResponse(res, 200, true, 'Image deleted successfully');
+  } catch (error) {
+    console.error('Delete image error:', error);
+    sendResponse(res, 500, false, 'Failed to delete image');
+  }
+});
+
+// @desc    Update product image details (alt text, primary status, sort order)
+// @route   PUT /api/products/:id/images/:imageId
+// @access  Private/Admin
+const updateProductImage = asyncHandler(async (req, res) => {
+  const { id, imageId } = req.params;
+  const { altText, isPrimary, sortOrder } = req.body;
+
+  // Check if product exists
+  const product = await prisma.product.findUnique({ where: { id } });
+  if (!product) {
+    return sendResponse(res, 404, false, 'Product not found');
+  }
+
+  // Check if image exists and belongs to this product
+  const image = await prisma.productImage.findFirst({
+    where: { id: imageId, productId: id }
+  });
+
+  if (!image) {
+    return sendResponse(res, 404, false, 'Image not found');
+  }
+
+  try {
+    // If setting as primary, unset other primary images
+    if (isPrimary === true) {
+      await prisma.productImage.updateMany({
+        where: { productId: id, isPrimary: true },
+        data: { isPrimary: false }
+      });
+    }
+
+    // Update the image
+    const updatedImage = await prisma.productImage.update({
+      where: { id: imageId },
+      data: {
+        ...(altText !== undefined && { altText }),
+        ...(isPrimary !== undefined && { isPrimary }),
+        ...(sortOrder !== undefined && { sortOrder: parseInt(sortOrder) })
+      }
+    });
+
+    sendResponse(res, 200, true, 'Image updated successfully', { image: updatedImage });
+  } catch (error) {
+    console.error('Update image error:', error);
+    sendResponse(res, 500, false, 'Failed to update image');
+  }
+});
+
+// @desc    Reorder product images
+// @route   PUT /api/products/:id/images/reorder
+// @access  Private/Admin
+const reorderProductImages = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { imageOrders } = req.body; // Array of { imageId, sortOrder }
+
+  // Check if product exists
+  const product = await prisma.product.findUnique({ where: { id } });
+  if (!product) {
+    return sendResponse(res, 404, false, 'Product not found');
+  }
+
+  if (!Array.isArray(imageOrders)) {
+    return sendResponse(res, 400, false, 'imageOrders must be an array');
+  }
+
+  try {
+    // Update sort orders in a transaction
+    await prisma.$transaction(async (tx) => {
+      for (const { imageId, sortOrder } of imageOrders) {
+        await tx.productImage.update({
+          where: { id: imageId, productId: id },
+          data: { sortOrder: parseInt(sortOrder) }
+        });
+      }
+    });
+
+    // Get updated product with reordered images
+    const updatedProduct = await prisma.product.findUnique({
+      where: { id },
+      include: {
+        productImages: { orderBy: { sortOrder: 'asc' } }
+      }
+    });
+
+    sendResponse(res, 200, true, 'Images reordered successfully', { product: updatedProduct });
+  } catch (error) {
+    console.error('Reorder images error:', error);
+    sendResponse(res, 500, false, 'Failed to reorder images');
+  }
+});
+
 module.exports = {
   getProducts,
   getProduct,
@@ -554,4 +767,8 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
+  uploadProductImages,
+  deleteProductImage,
+  updateProductImage,
+  reorderProductImages,
 };

@@ -23,6 +23,14 @@ const ProfessionalIcon = ({ name, size = 20, className = '', ...props }) => {
         <path d="m21 21-4.35-4.35"></path>
       </svg>
     ),
+    'ZoomIn': (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.35-4.35"></path>
+        <line x1="11" y1="8" x2="11" y2="14"></line>
+        <line x1="8" y1="11" x2="14" y2="11"></line>
+      </svg>
+    ),
     'Home': (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -441,6 +449,7 @@ const ProfessionalIcon = ({ name, size = 20, className = '', ...props }) => {
 export const Menu = (props) => <ProfessionalIcon name="Menu" {...props} />;
 export const X = (props) => <ProfessionalIcon name="X" {...props} />;
 export const Search = (props) => <ProfessionalIcon name="Search" {...props} />;
+export const ZoomIn = (props) => <ProfessionalIcon name="ZoomIn" {...props} />;
 export const ShoppingCart = (props) => <ProfessionalIcon name="ShoppingCart" {...props} />;
 export const User = (props) => <ProfessionalIcon name="User" {...props} />;
 export const Heart = (props) => <ProfessionalIcon name="Heart" {...props} />;

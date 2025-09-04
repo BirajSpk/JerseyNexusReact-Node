@@ -21,7 +21,7 @@ import toast from 'react-hot-toast';
 import { productAPI } from '../utils/api';
 import BackButton from '../components/ui/BackButton';
 import RelatedProducts from '../components/RelatedProducts';
-import ImageZoom from '../components/ImageZoom';
+import ProductImageGallery from '../components/ProductImageGallery';
 import { getImageUrl } from '../utils/helpers';
 
 const ProductDetail = () => {
@@ -36,8 +36,6 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [processedImages, setProcessedImages] = useState([]);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('description');
   
 
@@ -66,34 +64,13 @@ const ProductDetail = () => {
             throw new Error('Product not found');
           }
 
-          // Process images - handle both string arrays and object arrays
-          let processedImages = [];
-
-          if (productData.productImages && Array.isArray(productData.productImages) && productData.productImages.length > 0) {
-            // Images are now an array of image objects from ProductImage table
-            processedImages = productData.productImages
-              .sort((a, b) => a.sortOrder - b.sortOrder) // Sort by sortOrder
-              .map(image => ({
-                url: getImageUrl(image.url),
-                altText: image.altText || productData.name || 'Product Image',
-                isPrimary: image.isPrimary,
-                sortOrder: image.sortOrder
-              }));
-          } else {
-            // Fallback to placeholder if no images
-            processedImages = [{
-              url: 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image',
-              altText: 'Product Image'
-            }];
-          }
-
-          setProcessedImages(processedImages);
+          // Images are now handled by ProductImageGallery component
 
 
 
 
 
-          console.log('Processed images:', processedImages);
+          console.log('Product data loaded:', productData.name);
 
           // Process sizes - handle both string arrays and object arrays
           let processedSizes = [];
@@ -122,7 +99,7 @@ const ProductDetail = () => {
           // Set processed product data with defaults
           setProduct({
             ...productData,
-            images: processedImages,
+            images: productData.images || [],
             sizes: processedSizes,
             colors: productData.colors || ['Default'],
             rating: productData.rating || 4.5,
@@ -273,68 +250,27 @@ const ProductDetail = () => {
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
+          className="relative"
         >
-          {/* Main Image with Zoom */}
-          <div className="relative mb-4">
-            <ImageZoom
-              src={processedImages?.[selectedImageIndex]?.url || 'https://placehold.co/600x600/e5e7eb/6b7280?text=Product+Image'}
-              alt={processedImages?.[selectedImageIndex]?.altText || product.name}
-              className="w-full aspect-square rounded-lg"
-            />
+          <ProductImageGallery
+            images={product.productImages || []}
+            productName={product.name}
+            className="w-full"
+          />
+
+          {/* Overlay badges */}
+          <div className="absolute top-4 left-4 z-10">
             {product.isNew && (
-              <span className="absolute top-4 left-4 bg-secondary text-white px-3 py-1 rounded-full text-sm font-medium">
+              <span className="bg-secondary text-white px-3 py-1 rounded-full text-sm font-medium mb-2 block">
                 New
               </span>
             )}
             {product.originalPrice > product.price && (
-              <span className="absolute top-4 right-4 bg-danger text-white px-3 py-1 rounded-full text-sm font-medium">
+              <span className="bg-danger text-white px-3 py-1 rounded-full text-sm font-medium">
                 {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
               </span>
             )}
-            {/* Image counter */}
-            {processedImages.length > 1 && (
-              <div className="absolute bottom-4 right-4 bg-black/50 text-white px-2 py-1 rounded text-sm">
-                {selectedImageIndex + 1} / {processedImages.length}
-              </div>
-            )}
           </div>
-
-          {/* Image Thumbnails */}
-          {processedImages.length > 1 && (
-            <div className="grid grid-cols-4 gap-2">
-              {processedImages.map((image, index) => (
-                <motion.button
-                  key={index}
-                  onClick={() => setSelectedImageIndex(index)}
-                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all duration-200 ${
-                    selectedImageIndex === index
-                      ? 'border-primary shadow-lg'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <img
-                    src={image.url}
-                    alt={image.altText}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.src = 'https://placehold.co/150x150/e5e7eb/6b7280?text=Image';
-                    }}
-                  />
-                  {selectedImageIndex === index && (
-                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                      <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    </div>
-                  )}
-                </motion.button>
-              ))}
-            </div>
-          )}
         </motion.div>
 
         {/* Product Details */}

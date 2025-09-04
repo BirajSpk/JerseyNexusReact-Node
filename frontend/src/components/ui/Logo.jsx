@@ -120,27 +120,27 @@ const Logo = ({
         cy="252.5"
         r="252.5"
         fill={colors.primary}
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 1, ease: "easeInOut" }}
+        initial={animated ? { scale: 0, opacity: 0 } : false}
+        animate={animated ? { scale: 1, opacity: 1 } : false}
+        transition={animated ? { duration: 1, ease: "easeInOut" } : {}}
       />
 
       {/* White Building/Jersey Shape */}
       <motion.path
         d="M350.4,100.7H234.5l0,0l-33.4,33.4c17.9,17.9,17.9,46.9,0,64.7c-17.9,17.9-46.9,17.9-64.7,0 L103,232.2l2.2,2.2l-2.3-2.1v115.9h61.9V294l105.8,105.8l131.6-131.6L296.4,162.6h54V100.7z"
         fill={colors.secondary}
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 1.2, delay: 0.3, ease: "easeInOut" }}
+        initial={animated ? { pathLength: 0, opacity: 0 } : false}
+        animate={animated ? { pathLength: 1, opacity: 1 } : false}
+        transition={animated ? { duration: 1.2, delay: 0.3, ease: "easeInOut" } : {}}
       />
 
       {/* White Center Element */}
       <motion.path
         d="M281.2,245v12.4c-9.3,1.7-18.9,2.6-28.7,2.6c-9.8,0-19.4-0.9-28.7-2.6V245c9.3,1.6,18.9,2.4,28.7,2.4 C262.3,247.4,271.9,246.6,281.2,245z"
         fill={colors.secondary}
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.6, ease: "easeInOut" }}
+        initial={animated ? { scale: 0, opacity: 0 } : false}
+        animate={animated ? { scale: 1, opacity: 1 } : false}
+        transition={animated ? { duration: 0.8, delay: 0.6, ease: "easeInOut" } : {}}
       />
 
       {/* Yellow Rectangle */}
@@ -151,9 +151,9 @@ const Logo = ({
         height="25.2"
         fill={colors.accent}
         transform="matrix(-0.7071 0.7071 -0.7071 -0.7071 594.9292 318.9407)"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.8, ease: "easeInOut" }}
+        initial={animated ? { scale: 0, opacity: 0 } : false}
+        animate={animated ? { scale: 1, opacity: 1 } : false}
+        transition={animated ? { duration: 0.6, delay: 0.8, ease: "easeInOut" } : {}}
       />
 
       {/* Green Rectangle */}
@@ -164,9 +164,9 @@ const Logo = ({
         height="25.2"
         fill={colors.green}
         transform="matrix(-0.7071 0.7071 -0.7071 -0.7071 655.7191 293.7952)"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.9, ease: "easeInOut" }}
+        initial={animated ? { scale: 0, opacity: 0 } : false}
+        animate={animated ? { scale: 1, opacity: 1 } : false}
+        transition={animated ? { duration: 0.6, delay: 0.9, ease: "easeInOut" } : {}}
       />
 
       {/* Red Rectangle */}
@@ -177,9 +177,9 @@ const Logo = ({
         height="25.2"
         fill={colors.red}
         transform="matrix(-0.7071 0.7071 -0.7071 -0.7071 630.5836 232.9812)"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.6, delay: 1.0, ease: "easeInOut" }}
+        initial={animated ? { scale: 0, opacity: 0 } : false}
+        animate={animated ? { scale: 1, opacity: 1 } : false}
+        transition={animated ? { duration: 0.6, delay: 1.0, ease: "easeInOut" } : {}}
       />
 
       {/* Dark Rectangle */}
@@ -190,9 +190,9 @@ const Logo = ({
         height="25.2"
         fill={colors.dark}
         transform="matrix(-0.7071 0.7071 -0.7071 -0.7071 691.3735 207.8356)"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.6, delay: 1.1, ease: "easeInOut" }}
+        initial={animated ? { scale: 0, opacity: 0 } : false}
+        animate={animated ? { scale: 1, opacity: 1 } : false}
+        transition={animated ? { duration: 0.6, delay: 1.1, ease: "easeInOut" } : {}}
       />
     </svg>
   );
@@ -200,26 +200,36 @@ const Logo = ({
   const LogoComponent = animated ? motion.div : 'div';
   const TextComponent = animated ? motion.span : 'span';
 
+  // Prepare props conditionally
+  const logoProps = animated ? {
+    className: "flex-shrink-0 cursor-pointer",
+    variants: logoVariants,
+    initial: "initial",
+    whileHover: "hover",
+    whileTap: "tap"
+  } : {
+    className: "flex-shrink-0 cursor-pointer"
+  };
+
+  const textProps = animated ? {
+    className: `font-bold ${textSizes[size]} ${variant === 'white' || variant === 'dark' ? 'text-white' : 'text-gray-900'} tracking-tight`,
+    style: { color: colors.text },
+    variants: textVariants,
+    initial: "initial",
+    whileHover: "hover"
+  } : {
+    className: `font-bold ${textSizes[size]} ${variant === 'white' || variant === 'dark' ? 'text-white' : 'text-gray-900'} tracking-tight`,
+    style: { color: colors.text }
+  };
+
   return (
     <div className="flex items-center space-x-2">
-      <LogoComponent
-        className="flex-shrink-0 cursor-pointer"
-        variants={animated ? logoVariants : {}}
-        initial={animated ? "initial" : false}
-        whileHover={animated ? "hover" : false}
-        whileTap={animated ? "tap" : false}
-      >
+      <LogoComponent {...logoProps}>
         <LogoSVG />
       </LogoComponent>
-      
+
       {showText && (
-        <TextComponent
-          className={`font-bold ${textSizes[size]} ${variant === 'white' || variant === 'dark' ? 'text-white' : 'text-gray-900'} tracking-tight`}
-          style={{ color: colors.text }}
-          variants={animated ? textVariants : {}}
-          initial={animated ? "initial" : false}
-          whileHover={animated ? "hover" : false}
-        >
+        <TextComponent {...textProps}>
           JerseyNexus
         </TextComponent>
       )}

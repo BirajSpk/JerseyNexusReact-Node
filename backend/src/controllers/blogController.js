@@ -1,12 +1,46 @@
 const { asyncHandler, sendResponse, generateSlug } = require('../utils/helpers');
 const { prisma, executeWithRetry } = require('../config/database');
+const multer = require('multer');
+const { uploadBufferToCloudinary, deleteFromCloudinaryByUrl } = require('../utils/cloudinary');
+
+// Configure multer for blog images (memory storage for Cloudinary)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPEG, PNG, and WebP are allowed.'), false);
+    }
+  }
+});
 
 // @desc    Get all blogs
 // @route   GET /api/blogs
 // @access  Public
 const getBlogs = asyncHandler(async (req, res) => {
+  const { published } = req.query;
+  const isAdmin = req.user && req.user.role === 'ADMIN';
+
+  // Build where clause based on query parameters and user role
+  let whereClause = {};
+
+  // If published=true is requested, or user is not admin, filter for published blogs only
+  if (published === 'true' || !isAdmin) {
+    whereClause = {
+      OR: [
+        { published: true },
+        { status: 'PUBLISHED' }
+      ]
+    };
+  }
+
   const blogs = await prisma.blog.findMany({
-    // where: { published: true },
+    where: whereClause,
     include: {
       category: { select: { name: true, slug: true } },
       author: { select: { name: true, avatar: true } }
@@ -40,7 +74,16 @@ const getBlog = asyncHandler(async (req, res) => {
     }
   });
 
-  if (!blog || !blog.published) {
+  if (!blog) {
+    return sendResponse(res, 404, false, 'Blog not found');
+  }
+
+  // Check if blog is published (either published field is true OR status is PUBLISHED)
+  // For admin users, allow access to all blogs regardless of status
+  const isPublished = blog.published || blog.status === 'PUBLISHED';
+  const isAdmin = req.user && req.user.role === 'ADMIN';
+
+  if (!isPublished && !isAdmin) {
     return sendResponse(res, 404, false, 'Blog not found');
   }
 
@@ -51,10 +94,18 @@ const getBlog = asyncHandler(async (req, res) => {
 // @route   POST /api/blogs
 // @access  Private/Admin
 const createBlog = asyncHandler(async (req, res) => {
-  try {
-    console.log("creating blog ");
-    const { title, content, categoryId, published = false, status = 'DRAFT', imageUrl, existingFeaturedImage, metaTitle, metaDescription, slug, keywords, metaTags, excerpt } = req.body;
-    const authorId = req.user.id;
+  const uploadSingle = upload.single('featuredImage');
+
+  uploadSingle(req, res, async (err) => {
+    if (err) {
+      console.error('Upload error:', err);
+      return sendResponse(res, 400, false, err.message);
+    }
+
+    try {
+      console.log("creating blog ");
+      const { title, content, categoryId, published = false, status = 'DRAFT', imageUrl, existingFeaturedImage, metaTitle, metaDescription, slug, keywords, metaTags, excerpt } = req.body;
+      const authorId = req.user.id;
 
       console.table(req.body);
     // Validate required fields
@@ -82,18 +133,22 @@ const createBlog = asyncHandler(async (req, res) => {
 
     const computedSlug = slug && slug.trim().length > 0 ? generateSlug(slug) : generateSlug(title);
 
-    // Handle featured image
-    let featuredImageUrl = null;
-    if (req.file) {
-      // New uploaded file
-      featuredImageUrl = `/uploads/blogs/${req.file.filename}`;
-    } else if (existingFeaturedImage) {
-      // Existing image URL
-      featuredImageUrl = existingFeaturedImage;
-    } else if (imageUrl) {
-      // Legacy imageUrl field
-      featuredImageUrl = imageUrl;
-    }
+      // Handle featured image with Cloudinary upload
+      let featuredImageUrl = null;
+      if (req.file) {
+        // Upload to Cloudinary
+        const result = await uploadBufferToCloudinary(req.file.buffer, {
+          folder: `${process.env.CLOUDINARY_BASE_FOLDER || 'jerseynexus'}/blogs`,
+          resourceType: 'image',
+        });
+        featuredImageUrl = result.secure_url;
+      } else if (existingFeaturedImage) {
+        // Existing image URL
+        featuredImageUrl = existingFeaturedImage;
+      } else if (imageUrl) {
+        // Legacy imageUrl field
+        featuredImageUrl = imageUrl;
+      }
 
     const blog = await prisma.blog.create({
       data: {
@@ -114,12 +169,13 @@ const createBlog = asyncHandler(async (req, res) => {
       include: { category: true, author: { select: { name: true } } }
     });
 
-    console.log("Blog is created successfully")
-    sendResponse(res, 201, true, 'Blog created successfully', { blog });
-  } catch (error) {
-    console.error('Blog creation error:', error);
-    sendResponse(res, 500, false, 'Failed to create blog', { error: error.message });
-  }
+      console.log("Blog is created successfully")
+      sendResponse(res, 201, true, 'Blog created successfully', { blog });
+    } catch (error) {
+      console.error('Blog creation error:', error);
+      sendResponse(res, 500, false, 'Failed to create blog', { error: error.message });
+    }
+  });
 });
 
 // @desc    Update blog
@@ -167,9 +223,15 @@ const updateBlog = asyncHandler(async (req, res) => {
   }
 
   // Handle featured image update
-  if (req.file) {
-    // New uploaded file
-    data.featuredImage = `/uploads/blogs/${req.file.filename}`;
+  if (req.file && req.file.cloudinaryUrl) {
+    // New uploaded file via Cloudinary - delete old if existed and was Cloudinary
+    try {
+      if (existingBlog.featuredImage && existingBlog.featuredImage.includes('res.cloudinary.com')) {
+        const { deleteFromCloudinaryByUrl } = require('../utils/cloudinary');
+        await deleteFromCloudinaryByUrl(existingBlog.featuredImage, 'image');
+      }
+    } catch (e) {}
+    data.featuredImage = req.file.cloudinaryUrl;
     data.images = JSON.stringify([{ url: data.featuredImage, altText: rest.title || 'Blog Image', isPrimary: true }]);
   } else if (existingFeaturedImage) {
     // Keep existing image
@@ -200,9 +262,45 @@ const updateBlog = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const deleteBlog = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
+
+  // Get blog with featured image before deletion
+  const blog = await prisma.blog.findUnique({
+    where: { id },
+    select: { featuredImage: true, images: true }
+  });
+
+  if (!blog) {
+    return sendResponse(res, 404, false, 'Blog not found');
+  }
+
+  // Delete blog from database
   await prisma.blog.delete({ where: { id } });
-  
+
+  // Delete featured image from Cloudinary if exists
+  if (blog.featuredImage) {
+    await deleteFromCloudinaryByUrl(blog.featuredImage, 'image').catch((error) => {
+      console.error('Failed to delete blog featured image from Cloudinary:', error);
+    });
+  }
+
+  // Delete content images from Cloudinary if exists
+  if (blog.images) {
+    try {
+      const imageArray = typeof blog.images === 'string' ? JSON.parse(blog.images) : blog.images;
+      if (Array.isArray(imageArray)) {
+        for (const img of imageArray) {
+          if (img.url) {
+            await deleteFromCloudinaryByUrl(img.url, 'image').catch((error) => {
+              console.error('Failed to delete blog content image from Cloudinary:', error);
+            });
+          }
+        }
+      }
+    } catch (parseError) {
+      console.error('Failed to parse blog images for cleanup:', parseError);
+    }
+  }
+
   sendResponse(res, 200, true, 'Blog deleted successfully');
 });
 
