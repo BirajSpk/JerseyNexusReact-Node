@@ -49,8 +49,8 @@ const log = (level, levelNum, message, data = {}) => {
 
   // Console output in development
   if (process.env.NODE_ENV !== 'production') {
-    const emoji = level === 'ERROR' ? '❌' : level === 'WARN' ? '⚠️' : level === 'INFO' ? 'ℹ️' : '🐛';
-    console.log(`${emoji} [${level}] ${message}`, Object.keys(data).length ? data : '');
+    const prefix = level === 'ERROR' ? '[ERROR]' : level === 'WARN' ? '[WARN]' : level === 'INFO' ? '[INFO]' : '[DEBUG]';
+    console.log(`${prefix} ${message}`, Object.keys(data).length ? data : '');
   }
 };
 

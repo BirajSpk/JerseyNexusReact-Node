@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding database...');
+  console.log('[INFO] Seeding database...');
 
   // Create admin user
   const hashedPassword = await bcrypt.hash('Admin123!@#', 12);
@@ -20,7 +20,7 @@ async function main() {
     },
   });
 
-  console.log('✅ Admin user created:', admin.email);
+  console.log('[SUCCESS] Admin user created:', admin.email);
 
   // Create categories
   const productCategories = [
@@ -169,8 +169,8 @@ async function main() {
     },
   });
 
-  console.log('✅ Sample blog post created');
-  console.log('🎉 Database seeded successfully!');
+  console.log('[SUCCESS] Sample blog post created');
+  console.log('[SUCCESS] Database seeded successfully!');
 }
 
 main()
@@ -178,7 +178,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error('❌ Error seeding database:', e);
+    console.error('[ERROR] Error seeding database:', e);
     await prisma.$disconnect();
     process.exit(1);
   });

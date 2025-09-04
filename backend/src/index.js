@@ -59,7 +59,7 @@ if (process.env.NODE_ENV === 'production') {
   app.use('/api/', limiter);
   console.log('🛡️ Rate limiting enabled for production');
 } else {
-  console.log('🚀 Rate limiting disabled for development');
+  console.log('[INFO] Rate limiting disabled for development');
 }
 
 // Body parsing middleware
@@ -196,11 +196,11 @@ async function startServer() {
 
   try {
     const port = await listenWithFallback(DEFAULT_PORT, 15);
-    console.log(`🚀 JerseyNexus API running on port ${port}`);
-    console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🌐 Health check: http://localhost:${port}/health`);
-    console.log(`🗄️  Database check: http://localhost:${port}/health/database`);
-    console.log(`🔌 WebSocket server ready`);
+    console.log(`[INFO] JerseyNexus API running on port ${port}`);
+    console.log(`[INFO] Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`[INFO] Health check: http://localhost:${port}/health`);
+    console.log(`[INFO] Database check: http://localhost:${port}/health/database`);
+    console.log(`[INFO] WebSocket server ready`);
 
     // Initialize WebSocket service once server is listening
     WebSocketService.initialize(server);

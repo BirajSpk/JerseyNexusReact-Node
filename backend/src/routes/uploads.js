@@ -4,7 +4,8 @@ const {
   uploadProfileImage,
   uploadEditorMedia,
   uploadProductImages,
-  deleteFile
+  deleteFile,
+  cleanupOrphanedCloudinaryImages
 } = require('../controllers/uploadController');
 
 const router = express.Router();
@@ -23,5 +24,8 @@ router.post('/products', authorize('ADMIN'), uploadProductImages);
 
 // Delete file (owner or admin)
 router.delete('/delete', deleteFile);
+
+// Cleanup orphaned images (admin only)
+router.post('/cleanup', authorize('ADMIN'), cleanupOrphanedCloudinaryImages);
 
 module.exports = router;

@@ -11,15 +11,15 @@ class DatabaseChecker {
   async checkConnection() {
     try {
       await this.prisma.$connect();
-      console.log('✅ Database connection: SUCCESS');
+      console.log('[SUCCESS] Database connection: SUCCESS');
       return { success: true, message: 'Database connected successfully' };
     } catch (error) {
-      console.error('❌ Database connection: FAILED');
+      console.error('[ERROR] Database connection: FAILED');
       console.error('Error details:', error.message);
-      return { 
-        success: false, 
-        message: 'Database connection failed', 
-        error: error.message 
+      return {
+        success: false,
+        message: 'Database connection failed',
+        error: error.message
       };
     }
   }
@@ -51,12 +51,12 @@ class DatabaseChecker {
         }
       }
     } catch (error) {
-      console.error('❌ Database type check: FAILED');
+      console.error('[ERROR] Database type check: FAILED');
       console.error('Error details:', error.message);
-      return { 
-        success: false, 
-        message: 'Failed to check database type', 
-        error: error.message 
+      return {
+        success: false,
+        message: 'Failed to check database type',
+        error: error.message
       };
     }
   }
@@ -87,31 +87,31 @@ class DatabaseChecker {
       );
 
       if (missingTables.length === 0) {
-        console.log('✅ Database tables: ALL REQUIRED TABLES EXIST');
-        console.log(`📋 Found tables: ${existingTables.join(', ')}`);
-        return { 
-          success: true, 
-          existingTables, 
-          message: 'All required tables exist' 
+        console.log('[SUCCESS] Database tables: ALL REQUIRED TABLES EXIST');
+        console.log(`[INFO] Found tables: ${existingTables.join(', ')}`);
+        return {
+          success: true,
+          existingTables,
+          message: 'All required tables exist'
         };
       } else {
-        console.log('⚠️  Database tables: MISSING TABLES');
-        console.log(`❌ Missing: ${missingTables.join(', ')}`);
-        console.log(`✅ Existing: ${existingTables.join(', ')}`);
-        return { 
-          success: false, 
-          existingTables, 
+        console.log('[WARN] Database tables: MISSING TABLES');
+        console.log(`[ERROR] Missing: ${missingTables.join(', ')}`);
+        console.log(`[SUCCESS] Existing: ${existingTables.join(', ')}`);
+        return {
+          success: false,
+          existingTables,
           missingTables,
-          message: `Missing tables: ${missingTables.join(', ')}` 
+          message: `Missing tables: ${missingTables.join(', ')}`
         };
       }
     } catch (error) {
-      console.error('❌ Table check: FAILED');
+      console.error('[ERROR] Table check: FAILED');
       console.error('Error details:', error.message);
-      return { 
-        success: false, 
-        message: 'Failed to check tables', 
-        error: error.message 
+      return {
+        success: false,
+        message: 'Failed to check tables',
+        error: error.message
       };
     }
   }
@@ -176,10 +176,10 @@ class DatabaseChecker {
       const allPermissions = Object.values(tests).every(test => test);
       
       if (allPermissions) {
-        console.log('✅ Database permissions: ALL CRUD OPERATIONS ALLOWED');
+        console.log('[SUCCESS] Database permissions: ALL CRUD OPERATIONS ALLOWED');
       } else {
-        console.log('⚠️  Database permissions: LIMITED ACCESS');
-        console.log(`📋 Permissions: READ(${tests.read ? '✅' : '❌'}) WRITE(${tests.write ? '✅' : '❌'}) UPDATE(${tests.update ? '✅' : '❌'}) DELETE(${tests.delete ? '✅' : '❌'})`);
+        console.log('[WARN] Database permissions: LIMITED ACCESS');
+        console.log(`[INFO] Permissions: READ(${tests.read ? 'OK' : 'FAIL'}) WRITE(${tests.write ? 'OK' : 'FAIL'}) UPDATE(${tests.update ? 'OK' : 'FAIL'}) DELETE(${tests.delete ? 'OK' : 'FAIL'})`);
       }
 
       return { 
@@ -189,12 +189,12 @@ class DatabaseChecker {
       };
 
     } catch (error) {
-      console.error('❌ Permission check: FAILED');
+      console.error('[ERROR] Permission check: FAILED');
       console.error('Error details:', error.message);
-      return { 
-        success: false, 
-        message: 'Failed to check permissions', 
-        error: error.message 
+      return {
+        success: false,
+        message: 'Failed to check permissions',
+        error: error.message
       };
     }
   }
@@ -223,10 +223,10 @@ class DatabaseChecker {
     const overallSuccess = Object.values(results).every(result => result.success);
     
     if (overallSuccess) {
-      console.log('🎉 PostgreSQL Database is properly configured and ready!');
+      console.log('[SUCCESS] PostgreSQL Database is properly configured and ready!');
     } else {
-      console.log('⚠️  PostgreSQL Database has issues that need attention.');
-      console.log('💡 Recommended actions:');
+      console.log('[WARN] PostgreSQL Database has issues that need attention.');
+      console.log('[INFO] Recommended actions:');
       if (!results.connection.success) {
         console.log('   1. Check your DATABASE_URL in .env file');
         console.log('   2. Ensure PostgreSQL server is running');

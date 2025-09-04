@@ -75,15 +75,22 @@ const RichTextEditor = ({
         formData.append('media', file);
         
         const response = await uploadAPI.uploadEditor(formData);
-        const imageUrl = `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5001'}${response.data.data.url}`;
-        
+        let imageUrl = response.data?.data?.url;
+        if (typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+          // Use absolute Cloudinary URL as-is (with delivery optimization)
+          imageUrl = imageUrl.replace('/upload/', '/upload/f_auto,q_auto/');
+        } else {
+          // Fallback to previous relative handling
+          imageUrl = `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5003'}${imageUrl}`;
+        }
+
         // Prompt for alt text
         const altText = prompt('Enter alt text for the image:') || '';
-        
-        editor?.chain().focus().setImage({ 
-          src: imageUrl, 
+
+        editor?.chain().focus().setImage({
+          src: imageUrl,
           alt: altText,
-          title: altText 
+          title: altText
         }).run();
         
         toast.success('Image uploaded successfully');

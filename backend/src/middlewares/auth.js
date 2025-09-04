@@ -57,6 +57,48 @@ const protect = async (req, res, next) => {
   }
 };
 
+// Optional authentication - sets req.user if valid token provided, but doesn't fail if no token
+const optionalAuth = async (req, res, next) => {
+  try {
+    let token;
+
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (token) {
+      try {
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Get user from database
+        const user = await prisma.user.findUnique({
+          where: { id: decoded.id },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            avatar: true,
+            createdAt: true
+          }
+        });
+
+        if (user) {
+          req.user = user;
+        }
+      } catch (error) {
+        // Silently ignore token errors for optional auth
+        console.log('Optional auth token error:', error.message);
+      }
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Admin authorization
 const authorize = (...roles) => {
   return (req, res, next) => {
@@ -70,4 +112,4 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+module.exports = { protect, authorize, optionalAuth };

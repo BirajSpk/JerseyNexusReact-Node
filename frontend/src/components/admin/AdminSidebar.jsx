@@ -2,6 +2,17 @@ import React from 'react';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import Logo from '../ui/Logo';
+import {
+  BarChart3,
+  Package,
+  FolderOpen,
+  ShoppingBag,
+  Users,
+  FileText,
+  LogOut,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
 
 const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
   const dispatch = useDispatch();
@@ -10,37 +21,37 @@ const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
     {
       id: 'dashboard',
       name: 'Dashboard',
-      icon: '📊',
+      icon: BarChart3,
       description: 'Overview & Analytics'
     },
     {
       id: 'products',
       name: 'Products',
-      icon: '👕',
+      icon: Package,
       description: 'Manage Jerseys & Items'
     },
     {
       id: 'categories',
       name: 'Categories',
-      icon: '📂',
+      icon: FolderOpen,
       description: 'Product & Blog Categories'
     },
     {
       id: 'orders',
       name: 'Orders',
-      icon: '📦',
+      icon: ShoppingBag,
       description: 'Order Management'
     },
     {
       id: 'users',
       name: 'Users',
-      icon: '👥',
+      icon: Users,
       description: 'User Management'
     },
     {
       id: 'blogs',
       name: 'Blogs',
-      icon: '📝',
+      icon: FileText,
       description: 'Content Management'
     }
   ];
@@ -79,7 +90,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
               activeTab === item.id ? 'bg-blue-600 border-r-4 border-blue-400' : ''
             }`}
           >
-            <span className="text-xl mr-3">{item.icon}</span>
+            <item.icon className="w-5 h-5 mr-3" />
             {isOpen && (
               <div>
                 <div className="font-medium">{item.name}</div>
@@ -96,7 +107,7 @@ const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
           onClick={handleLogout}
           className="w-full flex items-center px-2 py-2 text-left hover:bg-gray-800 transition-colors rounded"
         >
-          <span className="text-xl mr-3">🚪</span>
+          <LogOut className="w-5 h-5 mr-3" />
           {isOpen && <span className="font-medium">Logout</span>}
         </button>
       </div>
@@ -106,9 +117,11 @@ const AdminSidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
         onClick={() => setIsOpen(!isOpen)}
         className="absolute -right-3 top-6 w-6 h-6 bg-gray-900 border border-gray-600 rounded-full flex items-center justify-center hover:bg-gray-800 transition-colors"
       >
-        <span className="text-xs text-white">
-          {isOpen ? '←' : '→'}
-        </span>
+        {isOpen ? (
+          <ChevronLeft className="w-3 h-3 text-white" />
+        ) : (
+          <ChevronRight className="w-3 h-3 text-white" />
+        )}
       </button>
     </div>
   );

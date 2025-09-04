@@ -112,7 +112,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="group">
-            <Logo size="lg" animated={true} showText={true} variant="default" />
+            <Logo size="lg" animated={false} showText={true} variant="default" />
           </Link>
 
           {/* Desktop Navigation */}

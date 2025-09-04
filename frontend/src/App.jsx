@@ -7,6 +7,7 @@ import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import AppInitializer from './components/AppInitializer';
 import ErrorBoundary from './components/ErrorBoundary';
+import ScrollToTop from './components/ScrollToTop';
 
 // Pages
 import Home from './pages/Home';
@@ -47,6 +48,7 @@ function App() {
   return (
     <AppInitializer>
       <ErrorBoundary>
+        <ScrollToTop />
         <div className="min-h-screen bg-neutral flex flex-col">
         {!isAdminRoute && <Navbar />}
 

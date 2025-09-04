@@ -110,6 +110,14 @@ export const productAPI = {
   deleteProduct: (id) => api.delete(`/products/${id}`),
   getFeaturedProducts: () => api.get('/products?featured=true'),
   getProductsByCategory: (categoryId) => api.get(`/products?categoryId=${categoryId}`),
+
+  // Product image management
+  uploadProductImages: (productId, formData) => api.post(`/products/${productId}/images`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  deleteProductImage: (productId, imageId) => api.delete(`/products/${productId}/images/${imageId}`),
+  updateProductImage: (productId, imageId, data) => api.put(`/products/${productId}/images/${imageId}`, data),
+  reorderProductImages: (productId, imageOrders) => api.put(`/products/${productId}/images/reorder`, { imageOrders }),
 };
 
 export const categoryAPI = {

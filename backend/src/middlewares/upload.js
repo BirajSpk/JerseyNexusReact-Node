@@ -1,29 +1,9 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { uploadBufferToCloudinary } = require('../utils/cloudinary');
 
-// Create uploads directories if they don't exist
-const uploadsDir = path.join(__dirname, '../../uploads');
-const blogsDir = path.join(uploadsDir, 'blogs');
-
-if (!fs.existsSync(blogsDir)) {
-  fs.mkdirSync(blogsDir, { recursive: true });
-}
-
-// Configure multer for blog images
-const blogStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, blogsDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const extension = path.extname(file.originalname);
-    cb(null, 'blog-' + uniqueSuffix + extension);
-  }
-});
-
+// Configure multer for blog images (memory storage for Cloudinary)
 const blogUpload = multer({
-  storage: blogStorage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
@@ -37,27 +17,32 @@ const blogUpload = multer({
   }
 });
 
-// Middleware for blog image upload
+// Middleware for blog image upload -> attaches cloudinaryUrl in req.file.cloudinary
 const uploadBlogImage = (req, res, next) => {
-  blogUpload.single('featuredImage')(req, res, (err) => {
+  blogUpload.single('featuredImage')(req, res, async (err) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({
-          success: false,
-          message: 'File too large. Maximum size is 5MB.'
-        });
+        return res.status(400).json({ success: false, message: 'File too large. Maximum size is 5MB.' });
       }
-      return res.status(400).json({
-        success: false,
-        message: `Upload error: ${err.message}`
-      });
+      return res.status(400).json({ success: false, message: `Upload error: ${err.message}` });
     } else if (err) {
-      return res.status(400).json({
-        success: false,
-        message: err.message
-      });
+      return res.status(400).json({ success: false, message: err.message });
     }
-    next();
+
+    try {
+      if (req.file) {
+        const result = await uploadBufferToCloudinary(req.file.buffer, {
+          folder: `${process.env.CLOUDINARY_BASE_FOLDER || 'jerseynexus'}/blogs`,
+          resourceType: 'image',
+        });
+        req.file.cloudinaryUrl = result.secure_url;
+        req.file.cloudinaryPublicId = result.public_id;
+      }
+      next();
+    } catch (e) {
+      console.error('Blog image upload error:', e);
+      return res.status(500).json({ success: false, message: 'Failed to upload blog image' });
+    }
   });
 };
 
