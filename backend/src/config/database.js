@@ -8,7 +8,16 @@ const prisma = new PrismaClient({
     }
   },
   log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
-  errorFormat: 'minimal'
+  errorFormat: 'minimal',
+  // Add connection pool settings for better stability
+  __internal: {
+    engine: {
+      connectTimeout: 60000,
+      pool: {
+        timeout: 60000,
+      },
+    },
+  },
 });
 
 // Connection retry logic

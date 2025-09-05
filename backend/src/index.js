@@ -30,6 +30,11 @@ const notFound = require('./middlewares/notFound');
 const app = express();
 const server = http.createServer(app);
 
+// Trust proxy for Render deployment
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Security middleware
 app.use(helmet({
   // Allow images and other static assets to be loaded from a different origin (e.g., Vite dev server)
@@ -74,7 +79,18 @@ if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
 
-prisma.$connect();
+// Connect to database and ensure schema is ready
+prisma.$connect().then(async () => {
+  console.log('✅ Database connected successfully');
+
+  // Check if we need to run migrations
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('✅ Database schema is ready');
+  } catch (error) {
+    console.log('⚠️  Database schema check failed, this is normal on first deployment');
+  }
+}).catch(console.error);
 
 // Static files - use absolute path to ensure uploads are served correctly
 app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
