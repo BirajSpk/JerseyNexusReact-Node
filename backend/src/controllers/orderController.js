@@ -237,7 +237,11 @@ const deleteOrder = asyncHandler(async (req, res) => {
     if (req.user.role === 'ADMIN') {
       // Admin can delete any order
       const existingOrder = await prisma.order.findUnique({
-        where: { id }
+        where: { id },
+        include: {
+          items: true,
+          payments: true
+        }
       });
 
       if (!existingOrder) {
@@ -247,17 +251,34 @@ const deleteOrder = asyncHandler(async (req, res) => {
         });
       }
 
-      // Delete order (cascade will handle related records)
-      await prisma.order.delete({
-        where: { id }
+      // Use a transaction to ensure all related data is deleted properly
+      await prisma.$transaction(async (tx) => {
+        // Delete payments first
+        await tx.payment.deleteMany({
+          where: { orderId: id }
+        });
+
+        // Delete order items
+        await tx.orderItem.deleteMany({
+          where: { orderId: id }
+        });
+
+        // Finally delete the order
+        await tx.order.delete({
+          where: { id }
+        });
       });
 
       // Notify via WebSocket
-      WebSocketService.notifyOrderUpdate(id, {
-        type: 'order_deleted',
-        orderId: id,
-        deletedBy: 'admin'
-      });
+      try {
+        WebSocketService.notifyOrderUpdate(id, {
+          type: 'order_deleted',
+          orderId: id,
+          deletedBy: 'admin'
+        });
+      } catch (wsError) {
+        console.warn('WebSocket notification failed:', wsError.message);
+      }
 
       sendResponse(res, 200, true, 'Order deleted successfully');
     } else {
@@ -265,17 +286,33 @@ const deleteOrder = asyncHandler(async (req, res) => {
       const result = await orderService.deleteOrder(id, userId);
 
       // Notify via WebSocket
-      WebSocketService.notifyOrderUpdate(id, {
-        type: 'order_cancelled',
-        orderId: id,
-        cancelledBy: 'user'
-      });
+      try {
+        WebSocketService.notifyOrderUpdate(id, {
+          type: 'order_cancelled',
+          orderId: id,
+          cancelledBy: 'user'
+        });
+      } catch (wsError) {
+        console.warn('WebSocket notification failed:', wsError.message);
+      }
 
       sendResponse(res, 200, true, result.message);
     }
   } catch (error) {
+    console.error('Delete order error:', error);
     logError(error, { action: 'deleteOrder', orderId: req.params.id });
-    sendResponse(res, 400, false, error.message);
+
+    // Provide more specific error messages
+    let errorMessage = 'Failed to delete order';
+    if (error.code === 'P2003') {
+      errorMessage = 'Cannot delete order due to related records. Please contact support.';
+    } else if (error.code === 'P2025') {
+      errorMessage = 'Order not found or already deleted';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    sendResponse(res, 400, false, errorMessage);
   }
 });
 

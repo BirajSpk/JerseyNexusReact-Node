@@ -436,6 +436,10 @@ class OrderService {
           id: orderId,
           userId: userId,
           paymentStatus: 'PENDING' // Only allow deletion of pending orders
+        },
+        include: {
+          items: true,
+          payments: true
         }
       });
 
@@ -443,15 +447,38 @@ class OrderService {
         throw new Error('Order not found or cannot be deleted');
       }
 
-      // Delete order (cascade will handle order items and payments)
-      await prisma.order.delete({
-        where: { id: orderId }
+      // Use transaction to ensure all related data is deleted properly
+      await prisma.$transaction(async (tx) => {
+        // Delete payments first
+        await tx.payment.deleteMany({
+          where: { orderId: orderId }
+        });
+
+        // Delete order items
+        await tx.orderItem.deleteMany({
+          where: { orderId: orderId }
+        });
+
+        // Finally delete the order
+        await tx.order.delete({
+          where: { id: orderId }
+        });
       });
 
       return { success: true, message: 'Order deleted successfully' };
     } catch (error) {
       console.error('Error deleting order:', error);
-      throw new Error('Failed to delete order');
+
+      // Provide more specific error messages
+      if (error.code === 'P2003') {
+        throw new Error('Cannot delete order due to related records');
+      } else if (error.code === 'P2025') {
+        throw new Error('Order not found or already deleted');
+      } else if (error.message.includes('Order not found')) {
+        throw error; // Re-throw our custom error
+      } else {
+        throw new Error('Failed to delete order');
+      }
     }
   }
 

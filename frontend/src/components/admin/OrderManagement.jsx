@@ -49,17 +49,37 @@ const OrderManagement = () => {
 
   const deleteOrder = async (orderId) => {
     try {
-      await orderAPI.deleteOrder(orderId);
-      
-      // Update local state
-      setOrders(orders.filter(order => order.id !== orderId));
-      setShowDeleteModal(false);
-      setOrderToDelete(null);
-      
-      toast.success('Order deleted successfully!');
+      const response = await orderAPI.deleteOrder(orderId);
+
+      if (response.data.success) {
+        // Update local state
+        setOrders(orders.filter(order => order.id !== orderId));
+        setShowDeleteModal(false);
+        setOrderToDelete(null);
+
+        toast.success('Order deleted successfully!');
+      } else {
+        throw new Error(response.data.error || 'Failed to delete order');
+      }
     } catch (error) {
       console.error('Error deleting order:', error);
-      toast.error(error.response?.data?.error || 'Error deleting order. Please try again.');
+
+      // Extract error message from different possible sources
+      let errorMessage = 'Error deleting order. Please try again.';
+
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
+
+      // Close modal even if deletion failed
+      setShowDeleteModal(false);
+      setOrderToDelete(null);
     }
   };
 
@@ -325,11 +345,32 @@ const OrderManagement = () => {
             {selectedOrder.shippingAddress && (
               <div className="mb-6">
                 <h4 className="font-medium text-gray-900 mb-2">Shipping Address</h4>
-                <p className="text-sm text-gray-600">
-                  {selectedOrder.shippingAddress.fullName}<br />
-                  {selectedOrder.shippingAddress.address}<br />
-                  {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.postalCode}
-                </p>
+                {(() => {
+                  try {
+                    const address = typeof selectedOrder.shippingAddress === 'string'
+                      ? JSON.parse(selectedOrder.shippingAddress)
+                      : selectedOrder.shippingAddress;
+
+                    return (
+                      <div className="text-sm text-gray-600">
+                        <p><strong>Name:</strong> {address.fullName || address.name || 'N/A'}</p>
+                        <p><strong>Phone:</strong> {address.phone || 'N/A'}</p>
+                        <p><strong>Email:</strong> {address.email || 'N/A'}</p>
+                        <p><strong>Address:</strong> {address.address || 'N/A'}</p>
+                        <p><strong>City:</strong> {address.city || 'N/A'}</p>
+                        {address.postalCode && <p><strong>Postal Code:</strong> {address.postalCode}</p>}
+                        {address.country && <p><strong>Country:</strong> {address.country}</p>}
+                      </div>
+                    );
+                  } catch (error) {
+                    console.error('Error parsing shipping address:', error);
+                    return (
+                      <p className="text-sm text-red-600">
+                        Error displaying shipping address
+                      </p>
+                    );
+                  }
+                })()}
               </div>
             )}
 
