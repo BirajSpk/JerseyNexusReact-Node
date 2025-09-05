@@ -695,8 +695,8 @@ const handleKhaltiCallbackNew = asyncHandler(async (req, res) => {
         }
       }
 
-      // Redirect to success page
-      return res.redirect(`${process.env.FRONTEND_URL}/order-success?orderId=${orderId}&transactionId=${transaction_id}`);
+      // Redirect to processing page (consistent with eSewa flow)
+      return res.redirect(`${process.env.FRONTEND_URL}/payment/khalti/success?pidx=${pidx}&transaction_id=${transaction_id}&orderId=${orderId}`);
     } else {
       // Update payment as failed
       await paymentService.updatePaymentStatus(payment.id, 'FAILED', {

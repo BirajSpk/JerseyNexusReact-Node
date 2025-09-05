@@ -23,34 +23,21 @@ const KhaltiSuccess = () => {
 
         console.log('📦 Khalti callback received:', { pidx, transactionId, amount });
 
-        setPaymentData({ pidx, transactionId, amount });
+        const orderId = searchParams.get('orderId');
+        setPaymentData({ pidx, transactionId, amount, orderId });
 
-        // Verify the payment with backend using KPG-2 lookup
-        const verificationResponse = await paymentAPI.verifyKhaltiV2({ pidx });
+        // Since the backend already processed the payment, just show success and redirect
 
-        if (verificationResponse.data.success) {
-          const lookupData = verificationResponse.data.data;
-          
-          if (lookupData.status === 'Completed') {
-            toast.success('🎉 Khalti payment verified successfully!');
-            
-            // Redirect to order success page after 3 seconds
-            setTimeout(() => {
-              navigate('/orders', { 
-                state: { 
-                  paymentSuccess: true, 
-                  paymentMethod: 'Khalti',
-                  transactionId: lookupData.transaction_id,
-                  pidx: pidx
-                }
-              });
-            }, 3000);
-          } else {
-            throw new Error(`Payment verification failed. Status: ${lookupData.status}`);
-          }
-        } else {
-          throw new Error('Payment verification failed');
+        if (!orderId) {
+          throw new Error('Order ID not found in callback');
         }
+
+        toast.success('🎉 Khalti payment processed successfully!');
+
+        // Redirect to order success page after 3 seconds
+        setTimeout(() => {
+          navigate(`/order-success?orderId=${orderId}&transactionId=${transactionId}&paymentMethod=khalti`);
+        }, 3000);
 
       } catch (error) {
         console.error('❌ Khalti callback processing error:', error);
@@ -129,6 +116,7 @@ const KhaltiSuccess = () => {
               <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
                 <h3 className="font-semibold text-gray-800 mb-2">Payment Details</h3>
                 <div className="space-y-1 text-sm text-gray-600">
+                  <p><span className="font-medium">Order ID:</span> {paymentData.orderId}</p>
                   <p><span className="font-medium">Transaction ID:</span> {paymentData.transactionId}</p>
                   <p><span className="font-medium">Payment ID:</span> {paymentData.pidx}</p>
                   <p><span className="font-medium">Amount:</span> Rs. {paymentData.amount ? (paymentData.amount / 100).toFixed(2) : 'N/A'}</p>
@@ -138,7 +126,7 @@ const KhaltiSuccess = () => {
             )}
             
             <div className="text-sm text-gray-500">
-              Redirecting to your orders in a few seconds...
+              Redirecting to order confirmation in a few seconds...
             </div>
           </>
         )}

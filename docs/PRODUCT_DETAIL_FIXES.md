@@ -80,7 +80,7 @@ Use the actual slugs from the debug page:
 - Size selection should work properly
 - Unavailable sizes should be disabled
 
-## 🔍 Debugging Information
+## Debugging Information
 
 ### Console Logs Added:
 - `Fetching product with slug: [slug]`

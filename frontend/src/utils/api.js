@@ -47,8 +47,7 @@ api.interceptors.response.use(
     if (status === 401) {
       // Distinguish between missing token, invalid token, and expired token
       if (apiError === 'Missing token') {
-        // Likely a programming error where we forgot to attach the token
-        console.warn('Missing auth token for request:', error.config?.url);
+        // Authentication required
         toast.error('Authentication required. Please login.');
       } else if (apiError === 'Invalid token') {
         toast.error('Invalid session. Please login again.');

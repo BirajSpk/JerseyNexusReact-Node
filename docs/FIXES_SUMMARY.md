@@ -181,7 +181,7 @@ Enhanced `frontend/src/pages/Checkout.jsx`:
 - Efficient search and filtering
 - Optimized API responses
 
-## 🆘 If Issues Persist
+## If Issues Persist
 
 1. **Clear Browser Cache**: Hard refresh (Ctrl+Shift+R)
 2. **Restart All Services**:
@@ -198,7 +198,7 @@ Enhanced `frontend/src/pages/Checkout.jsx`:
 4. **Verify Environment**: Ensure all `.env` files have correct values
 5. **Test API Directly**: Use provided curl commands in troubleshooting guide
 
-## 📞 Support
+## Support
 
 - API Documentation: `docs/API_ENDPOINTS.md`
 - Troubleshooting: `docs/TROUBLESHOOTING.md`

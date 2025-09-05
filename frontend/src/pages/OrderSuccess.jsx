@@ -35,7 +35,10 @@ const OrderSuccess = () => {
         if (queryOrderId) {
           const response = await orderAPI.getOrderById(queryOrderId);
           if (response.data.success) {
-            setOrderData(response.data.data);
+            console.log('Order data from API:', response.data.data); // Debug log
+            // The API returns { order: {...} }, so we need to extract the order
+            const orderData = response.data.data.order || response.data.data;
+            setOrderData(orderData);
             toast.success('Order confirmed successfully!');
           } else {
             throw new Error('Failed to load order details');
@@ -74,19 +77,37 @@ const OrderSuccess = () => {
     return null;
   }
 
-  // Extract data based on structure
-  const items = orderData.items || [];
+  // Extract data based on structure with proper null checks
+  const items = orderData.items || orderData.orderItems || [];
   const total = orderData.totalAmount || orderData.total || 0;
-  const shipping = orderData.shippingAddress ?
-    (typeof orderData.shippingAddress === 'string' ?
-      JSON.parse(orderData.shippingAddress) :
-      orderData.shippingAddress) :
-    orderData.shipping;
+
+  // Handle shipping address with null checks
+  let shipping = null;
+  try {
+    if (orderData.shippingAddress) {
+      shipping = typeof orderData.shippingAddress === 'string' ?
+        JSON.parse(orderData.shippingAddress) :
+        orderData.shippingAddress;
+    } else if (orderData.shipping) {
+      shipping = orderData.shipping;
+    }
+
+    // Handle different field names in shipping address
+    if (shipping && shipping.fullName && !shipping.name) {
+      shipping.name = shipping.fullName;
+    }
+  } catch (error) {
+    console.error('Error parsing shipping address:', error);
+    shipping = null;
+  }
   const finalPaymentMethod = paymentMethod || orderData.paymentMethod || 'khalti';
   const orderId = orderData.id ? `#${orderData.id.slice(-8)}` : `JN${Date.now().toString().slice(-6)}`;
 
   // Show transaction ID if available (from Khalti callback)
   const displayTransactionId = transactionId || orderData.transactionId;
+
+  // Debug logs to understand data structure
+  console.log('Extracted data:', { items, total, shipping, finalPaymentMethod, orderId });
   
   return (
     <div className="min-h-screen bg-neutral py-12">
@@ -128,31 +149,44 @@ const OrderSuccess = () => {
             </h2>
             
             <div className="space-y-4 mb-6">
-              {items.map((item, index) => (
-                <div key={index} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
-                  <img
-                    src={item.image || 'https://placehold.co/80x80/e5e7eb/6b7280?text=Product'}
-                    alt={item.name}
-                    className="w-16 h-16 object-cover rounded"
-                    onError={(e) => {
-                      e.target.src = 'https://placehold.co/80x80/e5e7eb/6b7280?text=Product';
-                    }}
-                  />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-dark">{item.name}</h3>
-                    {item.size && (
-                      <p className="text-sm text-muted">Size: {item.size}</p>
-                    )}
-                    {item.color && (
-                      <p className="text-sm text-muted">Color: {item.color}</p>
-                    )}
-                    <p className="text-sm text-muted">Quantity: {item.quantity}</p>
+              {items && items.length > 0 ? items.map((item, index) => {
+                // Handle different item structures (direct item vs item with product)
+                const product = item.product || item;
+                const itemName = product?.name || item?.name || 'Unknown Product';
+                const itemImage = product?.images?.[0]?.url || item?.image || product?.image;
+                const itemPrice = item?.price || product?.price || 0;
+                const itemQuantity = item?.quantity || 1;
+
+                return (
+                  <div key={index} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
+                    <img
+                      src={itemImage || 'https://placehold.co/80x80/e5e7eb/6b7280?text=Product'}
+                      alt={itemName}
+                      className="w-16 h-16 object-cover rounded"
+                      onError={(e) => {
+                        e.target.src = 'https://placehold.co/80x80/e5e7eb/6b7280?text=Product';
+                      }}
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-medium text-dark">{itemName}</h3>
+                      {item.size && (
+                        <p className="text-sm text-muted">Size: {item.size}</p>
+                      )}
+                      {item.color && (
+                        <p className="text-sm text-muted">Color: {item.color}</p>
+                      )}
+                      <p className="text-sm text-muted">Quantity: {itemQuantity}</p>
+                    </div>
+                    <span className="font-semibold text-dark">
+                      NPR {(itemPrice * itemQuantity).toLocaleString()}
+                    </span>
                   </div>
-                  <span className="font-semibold text-dark">
-                    NPR {(item.price * item.quantity).toLocaleString()}
-                  </span>
+                );
+              }) : (
+                <div className="text-center py-8 text-muted">
+                  <p>No items found in this order.</p>
                 </div>
-              ))}
+              )}
             </div>
             
             <div className="border-t pt-4">
@@ -179,17 +213,23 @@ const OrderSuccess = () => {
                 <Truck className="h-5 w-5 text-primary" />
                 <span>Shipping Info</span>
               </h3>
-              
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="font-medium text-dark">{shipping.name}</span>
+
+              {shipping ? (
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="font-medium text-dark">{shipping.name || 'N/A'}</span>
+                  </div>
+                  <div className="text-muted">{shipping.email || 'N/A'}</div>
+                  <div className="text-muted">{shipping.phone || 'N/A'}</div>
+                  <div className="text-muted">
+                    {shipping.address || 'N/A'}{shipping.city ? `, ${shipping.city}` : ''}
+                  </div>
                 </div>
-                <div className="text-muted">{shipping.email}</div>
-                <div className="text-muted">{shipping.phone}</div>
-                <div className="text-muted">
-                  {shipping.address}, {shipping.city}
+              ) : (
+                <div className="text-sm text-muted">
+                  <p>Shipping information not available</p>
                 </div>
-              </div>
+              )}
               
               <div className="mt-4 p-3 bg-primary/5 rounded-lg">
                 <p className="text-sm text-primary font-medium">
