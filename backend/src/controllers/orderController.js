@@ -13,13 +13,45 @@ const getOrders = asyncHandler(async (req, res) => {
   const orders = await prisma.order.findMany({
     where: userId ? { userId } : {},
     include: {
-      items: { include: { product: true } },
+      items: { 
+        include: { 
+          product: {
+            include: {
+              category: { select: { id: true, name: true } },
+              productImages: {
+                orderBy: { sortOrder: 'asc' },
+                take: 1
+              }
+            }
+          }
+        }
+      },
       user: { select: { name: true, email: true } }
     },
     orderBy: { createdAt: 'desc' }
   });
 
-  sendResponse(res, 200, true, 'Orders retrieved successfully', { orders });
+  // Handle cases where products might be deleted and format product images
+  const ordersWithProductInfo = orders.map(order => ({
+    ...order,
+    items: order.items.map(item => ({
+      ...item,
+      product: item.product ? {
+        ...item.product,
+        // Add primary image URL for easy access
+        image: item.product.productImages?.[0]?.url || null,
+        images: item.product.productImages?.[0]?.url || null // For backward compatibility
+      } : {
+        id: item.productId,
+        name: 'Product no longer available',
+        price: item.price,
+        image: null,
+        images: null
+      }
+    }))
+  }));
+
+  sendResponse(res, 200, true, 'Orders retrieved successfully', { orders: ordersWithProductInfo });
 });
 
 // @desc    Create order
@@ -146,8 +178,24 @@ const getOrder = asyncHandler(async (req, res) => {
       ...(userId && { userId })
     },
     include: {
-      items: { include: { product: true } },
-      user: { select: { name: true, email: true, phone: true } }
+      items: {
+        include: {
+          product: {
+            include: {
+              category: { select: { id: true, name: true } },
+              productImages: {
+                orderBy: { sortOrder: 'asc' },
+                take: 1
+              }
+            }
+          }
+        }
+      },
+      user: { select: { name: true, email: true, phone: true } },
+      payments: {
+        orderBy: { createdAt: 'desc' },
+        take: 1
+      }
     }
   });
 
@@ -155,7 +203,27 @@ const getOrder = asyncHandler(async (req, res) => {
     return sendResponse(res, 404, false, 'Order not found');
   }
 
-  sendResponse(res, 200, true, 'Order retrieved successfully', { order });
+  // Handle cases where products might be deleted and format product images
+  const orderWithProductInfo = {
+    ...order,
+    items: order.items.map(item => ({
+      ...item,
+      product: item.product ? {
+        ...item.product,
+        // Add primary image URL for easy access
+        image: item.product.productImages?.[0]?.url || null,
+        images: item.product.productImages?.[0]?.url || null // For backward compatibility
+      } : {
+        id: item.productId,
+        name: 'Product no longer available',
+        price: item.price,
+        image: null,
+        images: null
+      }
+    }))
+  };
+
+  sendResponse(res, 200, true, 'Order retrieved successfully', { order: orderWithProductInfo });
 });
 
 // @desc    Delete order

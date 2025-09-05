@@ -18,7 +18,15 @@ class OrderService {
           },
           items: {
             include: {
-              product: true
+              product: {
+                include: {
+                  category: { select: { id: true, name: true } },
+                  productImages: {
+                    orderBy: { sortOrder: 'asc' },
+                    take: 1
+                  }
+                }
+              }
             }
           },
           payments: {
@@ -48,20 +56,49 @@ class OrderService {
           include: {
             items: {
               include: {
-                product: true
+                product: {
+                  include: {
+                    category: { select: { id: true, name: true } },
+                    productImages: {
+                      orderBy: { sortOrder: 'asc' },
+                      take: 1
+                    }
+                  }
+                }
               }
             },
             payments: {
               orderBy: { createdAt: 'desc' },
-              take: 1 // Get latest payment
+              take: 1
             }
           }
         }),
         prisma.order.count({ where: { userId } })
       ]);
 
+      // Handle missing products and format product images
+      const ordersWithProductInfo = orders.map(order => ({
+        ...order,
+        items: order.items.map(item => ({
+          ...item,
+          product: item.product ? {
+            ...item.product,
+            // Add primary image URL for easy access
+            image: item.product.productImages?.[0]?.url || null,
+            images: item.product.productImages?.[0]?.url || null // For backward compatibility
+          } : {
+            id: item.productId,
+            name: 'Product no longer available',
+            price: item.price,
+            stock: 0,
+            image: null,
+            images: null
+          }
+        }))
+      }));
+
       return {
-        orders,
+        orders: ordersWithProductInfo,
         pagination: {
           page,
           limit,
@@ -112,7 +149,15 @@ class OrderService {
             },
             items: {
               include: {
-                product: true
+                product: {
+                  include: {
+                    category: { select: { id: true, name: true } },
+                    productImages: {
+                      orderBy: { sortOrder: 'asc' },
+                      take: 1
+                    }
+                  }
+                }
               }
             },
             payments: {
@@ -124,8 +169,28 @@ class OrderService {
         prisma.order.count({ where })
       ]);
 
+      // Format product images for consistency
+      const ordersWithFormattedProducts = orders.map(order => ({
+        ...order,
+        items: order.items.map(item => ({
+          ...item,
+          product: item.product ? {
+            ...item.product,
+            // Add primary image URL for easy access
+            image: item.product.productImages?.[0]?.url || null,
+            images: item.product.productImages?.[0]?.url || null // For backward compatibility
+          } : {
+            id: item.productId,
+            name: 'Product no longer available',
+            price: item.price,
+            image: null,
+            images: null
+          }
+        }))
+      }));
+
       return {
-        orders,
+        orders: ordersWithFormattedProducts,
         pagination: {
           page,
           limit,
@@ -174,13 +239,41 @@ class OrderService {
           },
           items: {
             include: {
-              product: true
+              product: {
+                include: {
+                  category: { select: { id: true, name: true } },
+                  productImages: {
+                    orderBy: { sortOrder: 'asc' },
+                    take: 1
+                  }
+                }
+              }
             }
           }
         }
       });
 
-      return order;
+      // Format product images for consistency
+      const orderWithFormattedProducts = {
+        ...order,
+        items: order.items.map(item => ({
+          ...item,
+          product: item.product ? {
+            ...item.product,
+            // Add primary image URL for easy access
+            image: item.product.productImages?.[0]?.url || null,
+            images: item.product.productImages?.[0]?.url || null // For backward compatibility
+          } : {
+            id: item.productId,
+            name: 'Product no longer available',
+            price: item.price,
+            image: null,
+            images: null
+          }
+        }))
+      };
+
+      return orderWithFormattedProducts;
     } catch (error) {
       console.error('Error creating order:', error);
       throw new Error('Failed to create order');
@@ -213,7 +306,15 @@ class OrderService {
           },
           items: {
             include: {
-              product: true
+              product: {
+                include: {
+                  category: { select: { id: true, name: true } },
+                  productImages: {
+                    orderBy: { sortOrder: 'asc' },
+                    take: 1
+                  }
+                }
+              }
             }
           },
           payments: {
@@ -222,7 +323,27 @@ class OrderService {
         }
       });
 
-      return order;
+      // Format product images for consistency
+      const orderWithFormattedProducts = {
+        ...order,
+        items: order.items.map(item => ({
+          ...item,
+          product: item.product ? {
+            ...item.product,
+            // Add primary image URL for easy access
+            image: item.product.productImages?.[0]?.url || null,
+            images: item.product.productImages?.[0]?.url || null // For backward compatibility
+          } : {
+            id: item.productId,
+            name: 'Product no longer available',
+            price: item.price,
+            image: null,
+            images: null
+          }
+        }))
+      };
+
+      return orderWithFormattedProducts;
     } catch (error) {
       console.error('Error updating order status:', error);
       throw new Error('Failed to update order status');
@@ -262,7 +383,15 @@ class OrderService {
           },
           items: {
             include: {
-              product: true
+              product: {
+                include: {
+                  category: { select: { id: true, name: true } },
+                  productImages: {
+                    orderBy: { sortOrder: 'asc' },
+                    take: 1
+                  }
+                }
+              }
             }
           },
           payments: {
@@ -271,7 +400,27 @@ class OrderService {
         }
       });
 
-      return order;
+      // Format product images for consistency
+      const orderWithFormattedProducts = {
+        ...order,
+        items: order.items.map(item => ({
+          ...item,
+          product: item.product ? {
+            ...item.product,
+            // Add primary image URL for easy access
+            image: item.product.productImages?.[0]?.url || null,
+            images: item.product.productImages?.[0]?.url || null // For backward compatibility
+          } : {
+            id: item.productId,
+            name: 'Product no longer available',
+            price: item.price,
+            image: null,
+            images: null
+          }
+        }))
+      };
+
+      return orderWithFormattedProducts;
     } catch (error) {
       console.error('Error updating payment status:', error);
       throw new Error('Failed to update payment status');

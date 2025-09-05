@@ -53,19 +53,8 @@ app.use(cors({
 }));
 
 // Rate limiting - disabled for development, enabled for production
-if (process.env.NODE_ENV === 'production') {
-  const limiter = rateLimit({
-    windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000, // 15 minutes
-    max: process.env.RATE_LIMIT_MAX || 100, // 100 for production
-    message: {
-      error: 'Too many requests from this IP, please try again later.'
-    }
-  });
-  app.use('/api/', limiter);
-  console.log('🛡️ Rate limiting enabled for production');
-} else {
-  console.log('[INFO] Rate limiting disabled for development');
-}
+console.log(' Rate limiting has been completely disabled for this project');
+
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
