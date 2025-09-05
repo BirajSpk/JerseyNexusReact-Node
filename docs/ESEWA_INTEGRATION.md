@@ -287,7 +287,7 @@ For production deployment:
 Enable debug logging in development:
 
 ```javascript
-console.log('📝 eSewa signature generation:');
+console.log('eSewa signature generation:');
 console.log('Message:', signatureMessage);
 console.log('Key:', hmacKey);
 console.log('Signature:', signature);

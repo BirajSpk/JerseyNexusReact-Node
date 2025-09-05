@@ -158,7 +158,7 @@ VITE_APP_NAME=JerseyNexus
    KHALTI_RETURN_URL="http://localhost:5001/api/payments/khalti/callback"
    ```
 
-## 🚀 Quick Diagnostic Commands
+## Quick Diagnostic Commands
 
 ### Check Backend Health
 ```bash
@@ -181,7 +181,7 @@ cd backend
 npm run db:check
 ```
 
-## 🔍 Debugging Steps
+## Debugging Steps
 
 ### 1. Check All Services Are Running
 ```bash
@@ -237,7 +237,7 @@ netstat -an | findstr :5432
 - [ ] Admin login works
 - [ ] API endpoints respond correctly
 
-## 🆘 Emergency Reset
+## Emergency Reset
 
 If nothing works, try this complete reset:
 
@@ -261,7 +261,7 @@ npm run install:all
 npm run dev:all
 ```
 
-## 📞 Getting Help
+## Getting Help
 
 If issues persist:
 1. Check the API endpoints documentation: `docs/API_ENDPOINTS.md`

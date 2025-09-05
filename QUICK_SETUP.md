@@ -2,6 +2,22 @@
 
 This guide will help you set up and connect the backend and frontend services.
 
+## 📁 Project Structure
+
+This project uses a clean monorepo structure with separate frontend and backend directories:
+
+```
+JerseyNexusReact-Node/
+├── frontend/          # React application
+├── backend/           # Node.js API
+├── docs/              # Documentation
+├── package.json       # Root scripts only
+├── .gitignore         # Project-level ignores
+└── README.md
+```
+
+**Important**: The root directory contains NO `node_modules` or `package-lock.json`. Each subdirectory manages its own dependencies.
+
 ## 📋 Prerequisites
 
 1. **Node.js** (v18 or higher)

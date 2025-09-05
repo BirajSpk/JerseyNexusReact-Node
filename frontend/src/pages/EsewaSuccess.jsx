@@ -40,15 +40,9 @@ const EsewaSuccess = () => {
             toast.success('🎉 eSewa payment verified successfully!');
             
             // Redirect to order success page after 3 seconds
+            const orderId = verificationResponse.data.data.orderId;
             setTimeout(() => {
-              navigate('/orders', { 
-                state: { 
-                  paymentSuccess: true, 
-                  paymentMethod: 'eSewa',
-                  transactionId: decodedData.transaction_code,
-                  orderId: verificationResponse.data.data.orderId
-                }
-              });
+              navigate(`/order-success?orderId=${orderId}&transactionId=${decodedData.transaction_code}&paymentMethod=esewa`);
             }, 3000);
           } else {
             throw new Error('Payment verification failed');
@@ -143,7 +137,7 @@ const EsewaSuccess = () => {
             )}
             
             <div className="text-sm text-gray-500">
-              Redirecting to your orders in a few seconds...
+              Redirecting to order confirmation in a few seconds...
             </div>
           </>
         )}

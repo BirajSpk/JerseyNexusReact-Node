@@ -136,7 +136,7 @@ const DashboardStats = () => {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
         <div className="flex items-center space-x-3">
-          <span className="text-2xl">❌</span>
+          <span className="text-2xl text-red-500">✗</span>
           <div>
             <h3 className="text-lg font-medium text-red-800">Error Loading Stats</h3>
             <p className="text-red-600">{stats.error}</p>

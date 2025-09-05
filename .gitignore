@@ -1,5 +1,44 @@
-node_modules
+# Root level ignores for monorepo
+# Prevent any node_modules in root (should only be in frontend/ and backend/)
+/node_modules/
+/node_modules_old/
+
+# Environment variables (root level)
 .env
 .env.local
 .env.development
 .env.production
+
+# Logs (root level)
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Temporary folders
+tmp/
+temp/
+
+# Package manager files (should be in subdirectories only)
+/package-lock.json
+/yarn.lock
+/npm-debug.log*

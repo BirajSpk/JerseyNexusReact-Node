@@ -3,35 +3,25 @@
   "version": "1.0.0",
   "description": "Complete sportswear e-commerce platform for Nepal",
   "private": true,
-  "workspaces": [
-    "frontend",
-    "backend",
-    "admin"
-  ],
   "scripts": {
-    "install:all": "npm install && npm run install:frontend && npm run install:backend && npm run install:admin",
-    "install:frontend": "cd frontend && npm install",
-    "install:backend": "cd backend && npm install",
-    "install:admin": "cd admin && npm install",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:admin\"",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:admin": "cd admin && npm run dev",
-    "build": "npm run build:frontend && npm run build:backend && npm run build:admin",
-    "build:frontend": "cd frontend && npm run build",
-    "build:backend": "cd backend && npm run build",
-    "build:admin": "cd admin && npm run build",
-    "test": "npm run test:backend && npm run test:frontend",
-    "test:backend": "cd backend && npm test",
-    "test:frontend": "cd frontend && npm test",
-    "db:migrate": "cd backend && npx prisma migrate dev",
-    "db:reset": "cd backend && npx prisma migrate reset",
-    "db:generate": "cd backend && npx prisma generate",
-    "db:studio": "cd backend && npx prisma studio"
+    "install:all": "npm run install:frontend; npm run install:backend",
+    "install:frontend": "Set-Location frontend; npm install",
+    "install:backend": "Set-Location backend; npm install",
+    "dev": "echo \"Run 'npm run dev:frontend' and 'npm run dev:backend' in separate terminals\"",
+    "dev:frontend": "Set-Location frontend; npm run dev",
+    "dev:backend": "Set-Location backend; npm run dev",
+    "build": "npm run build:frontend; npm run build:backend",
+    "build:frontend": "Set-Location frontend; npm run build",
+    "build:backend": "Set-Location backend; npm run build",
+    "test": "npm run test:backend; npm run test:frontend",
+    "test:backend": "Set-Location backend; npm test",
+    "test:frontend": "Set-Location frontend; npm test",
+    "db:migrate": "Set-Location backend; npx prisma migrate dev",
+    "db:reset": "Set-Location backend; npx prisma migrate reset",
+    "db:generate": "Set-Location backend; npx prisma generate",
+    "db:studio": "Set-Location backend; npx prisma studio"
   },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
-  },
+
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
@@ -46,8 +36,5 @@
     "react",
     "nodejs",
     "postgresql"
-  ],
-  "dependencies": {
-    "qs": "^6.14.0"
-  }
+  ]
 }
