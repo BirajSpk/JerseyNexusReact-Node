@@ -10,18 +10,6 @@ export default defineConfig({
     hmr: {
       port: 3000
     },
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5003',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/uploads': {
-        target: 'http://localhost:5003',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
   },
   build: {
     outDir: 'dist',
