@@ -1,3 +1,5 @@
+Live Website: https://jerseynexus.vercel.app/
+
 # JerseyNexus - Sportswear E-commerce Platform
 
 **JerseyNexus** is a complete sportswear & jersey e-commerce platform designed specifically for Nepal. It features a modern React frontend, robust Node.js backend, and a powerful admin dashboard.
