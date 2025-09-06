@@ -12,7 +12,7 @@ const {
   validateUserRegistration,
   validateUserLogin,
   validateRequest,
-} = require('../utils/validation');
+} = require('../validators/validation');
 const { body } = require('express-validator');
 
 const router = express.Router();

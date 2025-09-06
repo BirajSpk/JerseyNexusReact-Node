@@ -1,25 +1,36 @@
 const { body, validationResult } = require('express-validator');
 
-// Common validation rules
+// Email validation 
 const emailValidation = body('email')
   .isEmail()
   .normalizeEmail()
   .withMessage('Please provide a valid email address');
 
+
+  // Password validation 
+
 const passwordValidation = body('password')
   .isLength({ min: 6 })
   .withMessage('Password must be at least 6 characters long');
 
+
+  // Name validation
 const nameValidation = body('name')
   .trim()
   .isLength({ min: 2, max: 50 })
   .withMessage('Name must be between 2 and 50 characters');
+
+
+  // Phone number validation 
+
 
 const phoneValidation = body('phone')
   .optional()
   .matches(/^[\+]?[0-9]{10,15}$/)
   .withMessage('Please provide a valid phone number');
 
+
+  
 // Validation middleware
 const validateRequest = (req, res, next) => {
   const errors = validationResult(req);

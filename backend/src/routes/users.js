@@ -13,7 +13,7 @@ const {
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middlewares/auth');
 const { body } = require('express-validator');
-const { validateRequest } = require('../utils/validation');
+const { validateRequest } = require('../validators/validation');
 
 const router = express.Router();
 

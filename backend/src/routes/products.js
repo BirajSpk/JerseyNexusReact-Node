@@ -12,7 +12,7 @@ const {
   reorderProductImages,
 } = require('../controllers/productController');
 const { protect, authorize } = require('../middlewares/auth');
-const { validateProduct } = require('../utils/validation');
+const { validateProduct } = require('../validators/validation');
 
 const router = express.Router();
 

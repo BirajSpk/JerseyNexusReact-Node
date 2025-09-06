@@ -1,5 +1,5 @@
 const { asyncHandler, sendResponse, generateSlug } = require('../utils/helpers');
-const { prisma, executeWithRetry } = require('../config/database');
+const { prisma } = require('../config/database');
 
 // @desc    Get all categories
 // @route   GET /api/categories

@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const { generateToken } = require('../utils/auth');
 const { asyncHandler, sendResponse } = require('../utils/helpers');
-const { prisma, executeWithRetry } = require('../config/database');
+const { prisma } = require('../config/database');
 
 // @desc    Register user
 // @route   POST /api/auth/register

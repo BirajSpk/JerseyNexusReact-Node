@@ -1,7 +1,7 @@
 const { asyncHandler, sendResponse, getPagination } = require('../utils/helpers');
 const WebSocketService = require('../utils/websocket');
 const orderService = require('../services/orderService');
-const { prisma, executeWithRetry } = require('../config/database');
+const { prisma} = require('../config/database');
 const { logError, logOrderEvent } = require('../utils/logger');
 
 // @desc    Get user orders

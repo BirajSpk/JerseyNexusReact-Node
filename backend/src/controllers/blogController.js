@@ -1,5 +1,5 @@
 const { asyncHandler, sendResponse, generateSlug } = require('../utils/helpers');
-const { prisma, executeWithRetry } = require('../config/database');
+const { prisma } = require('../config/database');
 const multer = require('multer');
 const { uploadBufferToCloudinary, deleteFromCloudinaryByUrl } = require('../utils/cloudinary');
 

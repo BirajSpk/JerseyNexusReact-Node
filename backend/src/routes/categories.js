@@ -6,7 +6,7 @@ const {
   deleteCategory,
 } = require('../controllers/categoryController');
 const { protect, authorize } = require('../middlewares/auth');
-const { validateCategory } = require('../utils/validation');
+const { validateCategory } = require('../validators/validation');
 
 const router = express.Router();
 

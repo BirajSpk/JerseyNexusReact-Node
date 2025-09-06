@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const { asyncHandler, sendResponse } = require('../utils/helpers');
 const WebSocketService = require('../utils/websocket');
 const paymentService = require('../services/paymentService');
-const { prisma, executeWithRetry } = require('../config/database');
+const { prisma } = require('../config/database');
 
 // Khalti Configuration (KPG-2)
 const KHALTI_LIVE_PUBLIC_KEY = process.env.KHALTI_LIVE_PUBLIC_KEY;

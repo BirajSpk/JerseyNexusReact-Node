@@ -7,7 +7,7 @@ const {
   deleteBlog,
 } = require('../controllers/blogController');
 const { protect, authorize, optionalAuth } = require('../middlewares/auth');
-const { validateBlog } = require('../utils/validation');
+const { validateBlog } = require('../validators/validation');
 const { uploadBlogImage } = require('../middlewares/upload');
 
 const router = express.Router();

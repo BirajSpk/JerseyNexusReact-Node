@@ -1,5 +1,5 @@
 const { asyncHandler, sendResponse, getPagination, generateSlug } = require('../utils/helpers');
-const { prisma, executeWithRetry } = require('../config/database');
+const { prisma } = require('../config/database');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
