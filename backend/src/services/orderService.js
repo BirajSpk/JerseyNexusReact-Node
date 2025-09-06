@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 class OrderService {
-  // Get order by ID with all relations
+  
   async getOrderById(orderId) {
     try {
       const order = await prisma.order.findUnique({

@@ -31,6 +31,8 @@ const getOrders = asyncHandler(async (req, res) => {
     orderBy: { createdAt: 'desc' }
   });
 
+  
+
   // Handle cases where products might be deleted and format product images
   const ordersWithProductInfo = orders.map(order => ({
     ...order,

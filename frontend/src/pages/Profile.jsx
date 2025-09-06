@@ -55,35 +55,36 @@ const Profile = () => {
   } = useForm();
 
   // Fetch user profile data
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await userAPI.getProfile();
-        const userData = response.data.data.user;
-        setProfileData(userData);
-        
-        // Set form values
-        setValue('name', userData.name || '');
-        setValue('email', userData.email || '');
-        setValue('phone', userData.phone || '');
-        
-        if (userData.address && typeof userData.address === 'object') {
-          setValue('address.street', userData.address.street || '');
-          setValue('address.city', userData.address.city || '');
-          setValue('address.state', userData.address.state || '');
-          setValue('address.postalCode', userData.address.postalCode || '');
-          setValue('address.country', userData.address.country || 'Nepal');
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-        toast.error('Failed to load profile data');
-      }
-    };
+useEffect(() => {
+  if (!isAuthenticated) return;
 
-    if (isAuthenticated) {
-      fetchProfile();
+  const fetchProfile = async () => {
+    try {
+      const response = await userAPI.getProfile();
+      const userData = response.data.data.user;
+      setProfileData(userData);
+
+      // Set form values
+      setValue('name', userData.name || '');
+      setValue('email', userData.email || '');
+      setValue('phone', userData.phone || '');
+
+      if (userData.address && typeof userData.address === 'object') {
+        setValue('address.street', userData.address.street || '');
+        setValue('address.city', userData.address.city || '');
+        setValue('address.state', userData.address.state || '');
+        setValue('address.postalCode', userData.address.postalCode || '');
+        setValue('address.country', userData.address.country || 'Nepal');
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      toast.error('Failed to load profile data');
     }
-  }, [isAuthenticated, setValue]);
+  };
+
+  fetchProfile();
+}, [isAuthenticated]); // only run when auth changes
+
 
   // Fetch user orders
   const fetchOrders = async () => {

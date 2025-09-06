@@ -39,6 +39,7 @@ app.use(helmet({
   
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
+if(process.env.NODE_ENV === 'production'){
 
 // CORS configuration - unified for both HTTP and WebSocket
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || process.env.CORS || 'http://localhost:3000,http://localhost:3001')
@@ -51,8 +52,24 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
-// Rate limiting - disabled for development, enabled for production
-console.log(' Rate limiting has been completely disabled for this project');
+}
+else{
+  app.use(cors({
+    origin: '*',
+    credentials: true,
+    optionsSuccessStatus: 200
+  }));
+}
+  
+
+if(process.env.NODE_ENV === 'production'){
+    app.use(rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.'
+    }))
+
+};
 
 
 // Body parsing middleware
